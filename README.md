@@ -1,10 +1,10 @@
 # BigBalls
 
-This project depends on a specific structure and some other projects. I use Mac OS; it may compile on other platforms, but I haven't tested it.
+Update submodules by doing this from the terminal in the directory of the project:
 
-Install Arduino; it must be installed in /Applications. I'm using 1.0.5
+git submodule init
+git submodule update
 
-Update submodules by doing this from the terminal: 
-   git submodule init 
-   git submodule update
+To use Xcode, install Arduino; it must be installed in /Applications. Install "teensyduino" (the teensy add on for Arduino). Build/Upload targets should work.
 
+To use Arduino, copy the Libraries submodules to your Libraries foldre. Then open BigBalls.ino and build.
