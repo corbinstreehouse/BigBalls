@@ -1,0 +1,9 @@
+[submodule "Libraries/LEDPatterns"]
+	path = Libraries/LEDPatterns
+	url = git@github.com:corbinstreehouse/LEDPatterns.git
+[submodule "Libraries/FastLED"]
+	path = Libraries/FastLED
+	url = git@github.com:corbinstreehouse/FastLED.git
+[submodule "Libraries/AdaFruit_NeoPixel"]
+	path = Libraries/AdaFruit_NeoPixel
+	url = git@github.com:corbinstreehouse/Adafruit_NeoPixel.git
