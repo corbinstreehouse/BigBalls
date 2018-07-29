@@ -8,17 +8,19 @@
 #include "BigBalls.h"
 #include "FastLED.h"
 #include "LEDPatterns.h"
-#include "SPI.h"
-
-
 
 ///////////////// PARAMETERS YOU CAN TWEAK
 #define WAIT_FADE_DURATION (5*1000) // Duration the fade takes when in the wiating state, in ms (5 seconds)
 #define WAIT_TIME_BEFORE_COLOR_CHANGE (WAIT_FADE_DURATION*2) // Go to the next rainbow color after this amount of time in MS. IE: every 3 seconds the hue changes. This should be much bigger than the last value..
 
+// How long to do the initial color flash when initially moved
+#define INITIAL_MOVE_DURATION (3*1000) // 3 seconds
 
-LEDPatterns g_patterns(NUM_LEDS);
-uint32_t g_lastTimeInMS = 0; // in milliseconds
+#define WAIT_TIME_BEFORE_GOING_TO_SLEEP (10*1000) // 10 seconds with no movement, and then go to sleep mode again (soft glow)
+
+static LEDPatterns g_patterns(NUM_LEDS);
+static uint32_t g_lastTimeInMS = 0; // in milliseconds
+static uint32_t g_lastMovedTime = 0;
 
 typedef CD_ENUM(int16_t, CDBallState)  {
     CDBallStateWaiting,
@@ -31,9 +33,27 @@ CDBallState g_ballState = CDBallStateWaiting;
 
 void gotoWaitingState();
 
+#if DEBUG
+
+uint32_t g_movedTestTime = 0;
+#define MOVED_TEST_DURATION (3*1000) // after X seconds pretend we moved
+
+#endif
+
+
 bool checkBallMoved() {
+    bool result = false;
     // TODO: This should return YES if it was moved and starts some other state transitions
-    return false;
+#if DEBUG
+    if (millis() - g_movedTestTime > MOVED_TEST_DURATION) {
+        result = true;
+    }
+#endif
+    // keep track of how long we last moved
+    if (result) {
+        g_lastMovedTime = millis();
+    }
+    return result;
 }
 
 
@@ -43,8 +63,6 @@ void setup() {
     delay(5);
     Serial.println("--- begin serial --- (WARNING: delay on start!!)");
 #endif
-    SPI.begin();
-    
     // Set the initial pattern
     g_patterns.setPatternType(LEDPatternTypeFire);
     g_patterns.setPatternDuration(50);
@@ -53,7 +71,9 @@ void setup() {
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(g_patterns.getLEDs(), NUM_LEDS).setCorrection(TypicalLEDStrip);
     FastLED.setBrightness( BRIGHTNESS);
     //    FastLED.setMaxPowerInVoltsAndMilliamps(5.0, 18000);
-    
+#if DEBUG
+    g_movedTestTime = millis();
+#endif
     gotoWaitingState();
 }
 
@@ -72,13 +92,20 @@ void doWaiting() {
     g_patterns.show();
 }
 
-void doInitialMovePattern() {
+void gotoDirectionalPointState() {
+    g_ballState = CDBallStateDirectionalPoint;
     
+    g_lastTimeInMS = millis();
+    g_patterns.setPatternType(LEDPatternTypeSolidColor);
+    g_patterns.setPatternColor(CRGB::Green);
+
 }
 
 void doDirectionalPoint() {
+    // corbin...stuff here.
     
 }
+
 
 void doBadDirection() {
     
@@ -99,10 +126,52 @@ void gotoWaitingState() {
     g_patterns.show();
 }
 
+#define SKIP_COUNT 8
+// Don't do these patterns; they suck for this setup
+static const LEDPatternType g_patternsToSkip[SKIP_COUNT] = { LEDPatternTypeSolidColor, LEDPatternTypeFadeOut, LEDPatternTypeFadeIn, LEDPatternTypeDoNothing, LEDPatternTypeImageReferencedBitmap, LEDPatternTypeImageEntireStrip_UNUSED, LEDPatternTypeBitmap, LEDPatternTypeFadeInFadeOut };
+static int g_NextMovePatternToUse = LEDPatternTypeMin;
+
+void gotoInitialMovedState() {
+    // Do a pattern (not random) to indicate something is going to happen. Do it for 3 seconds, then flash
+    g_ballState = CDBallStateInitialMovePattern;
+    g_patterns.flashThreeTimes(CRGB::Green); /// this call is synchronous and will return when done
+    // Then a random cool pattern for INITIAL_MOVE_DURATION time duration
+    g_lastTimeInMS = millis();
+    g_patterns.setPatternType((LEDPatternType)g_NextMovePatternToUse);
+    g_patterns.setPatternDuration(INITIAL_MOVE_DURATION/3); // in ms...not sure this is what i want to do, as each pattern has a better duration
+    g_patterns.setPatternColor(CRGB::DarkViolet); // TODO: random color
+    // Setup the next
+    g_NextMovePatternToUse++;
+    if (g_NextMovePatternToUse >= LEDPatternTypeCount) {
+        g_NextMovePatternToUse = LEDPatternTypeMin;
+    } else {
+        // skip bad ones; order is important
+        for (int i = 0; i < SKIP_COUNT; i++) {
+            if (g_NextMovePatternToUse == g_patternsToSkip[i]) {
+                g_NextMovePatternToUse++;
+            } else {
+                break;
+            }
+        }
+    }
+}
+
+void doInitialMovePattern() {
+    // Do this pattern until the required time and then go to the direction state
+    if ((millis() - g_lastTimeInMS) >= INITIAL_MOVE_DURATION) {
+        gotoDirectionalPointState();
+    }
+}
+
+
 void loop() {
     switch (g_ballState) {
         case CDBallStateWaiting: {
-            doWaiting();
+            if (checkBallMoved()) {
+                gotoInitialMovedState();
+            } else {
+                doWaiting();
+            }
             break;
         }
         case CDBallStateInitialMovePattern: {
