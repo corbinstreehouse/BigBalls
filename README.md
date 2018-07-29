@@ -2,8 +2,8 @@
 
 Update submodules by doing this from the terminal in the directory of the project:
 
-git submodule init
-git submodule update
+`git submodule init`
+`git submodule update`
 
 To use Xcode, install Arduino; it must be installed in /Applications. Install "teensyduino" (the teensy add on for Arduino). Build/Upload targets should work.
 
