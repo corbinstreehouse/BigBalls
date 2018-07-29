@@ -14,9 +14,16 @@
 #define WAIT_TIME_BEFORE_COLOR_CHANGE (WAIT_FADE_DURATION*2) // Go to the next rainbow color after this amount of time in MS. IE: every 3 seconds the hue changes. This should be much bigger than the last value..
 
 // How long to do the initial color flash when initially moved
-#define INITIAL_MOVE_DURATION (3*1000) // 3 seconds
+#define INITIAL_MOVE_DURATION (5*1000) // in ms. X seconds
 
-#define WAIT_TIME_BEFORE_GOING_TO_SLEEP (10*1000) // 10 seconds with no movement, and then go to sleep mode again (soft glow)
+#define WAIT_TIME_BEFORE_GOING_TO_SLEEP (10*1000) // in ms. 10 seconds with no movement, and then go to sleep mode again (soft glow)
+
+#if DEBUG
+
+    #define MOVED_TEST_DURATION (10*1000) // in ms. after X seconds pretend we moved
+
+#endif
+
 
 static LEDPatterns g_patterns(NUM_LEDS);
 static uint32_t g_lastTimeInMS = 0; // in milliseconds
@@ -33,19 +40,19 @@ CDBallState g_ballState = CDBallStateWaiting;
 
 void gotoWaitingState();
 
+
 #if DEBUG
-
-uint32_t g_movedTestTime = 0;
-#define MOVED_TEST_DURATION (3*1000) // after X seconds pretend we moved
-
+static uint32_t g_movedTestTime = 0;
 #endif
-
 
 bool checkBallMoved() {
     bool result = false;
     // TODO: This should return YES if it was moved and starts some other state transitions
 #if DEBUG
-    if (millis() - g_movedTestTime > MOVED_TEST_DURATION) {
+    if ((millis() - g_movedTestTime) > MOVED_TEST_DURATION) {
+#if DEBUG
+        Serial.printf("DEBUG!! Faking a move after %f seconds.\r\n", MOVED_TEST_DURATION/1000.0);
+#endif
         result = true;
     }
 #endif
@@ -82,7 +89,6 @@ uint8_t g_lastHueColor = 0;
 void doWaiting() {
     // Should we glow to the next color?
     if (g_lastTimeInMS - millis() >= WAIT_TIME_BEFORE_COLOR_CHANGE) {
-        // Yup
         g_lastHueColor++; // unsigned 8 bit.... auto wrap past 255 back to 0.
         CHSV hsv = CHSV(g_lastHueColor, 255, 255);
         CRGB color;
@@ -93,6 +99,10 @@ void doWaiting() {
 }
 
 void gotoDirectionalPointState() {
+#if DEBUG
+    Serial.println("--- gotoDirectionalPointState");
+#endif
+
     g_ballState = CDBallStateDirectionalPoint;
     
     g_lastTimeInMS = millis();
@@ -112,6 +122,10 @@ void doBadDirection() {
 }
 
 void gotoWaitingState() {
+#if DEBUG
+    Serial.println("------- gotoWaitingState");
+#endif
+
     // Do a low-level glow of various colors; start the timer and set the pattern to show
     g_lastTimeInMS = millis();
     g_patterns.setPatternType(LEDPatternTypeFadeInFadeOut);
@@ -132,6 +146,10 @@ static const LEDPatternType g_patternsToSkip[SKIP_COUNT] = { LEDPatternTypeSolid
 static int g_NextMovePatternToUse = LEDPatternTypeMin;
 
 void gotoInitialMovedState() {
+#if DEBUG
+    Serial.println("------- gotoInitialMovedState");
+#endif
+
     // Do a pattern (not random) to indicate something is going to happen. Do it for 3 seconds, then flash
     g_ballState = CDBallStateInitialMovePattern;
     g_patterns.flashThreeTimes(CRGB::Green); /// this call is synchronous and will return when done
@@ -159,6 +177,9 @@ void gotoInitialMovedState() {
 void doInitialMovePattern() {
     // Do this pattern until the required time and then go to the direction state
     if ((millis() - g_lastTimeInMS) >= INITIAL_MOVE_DURATION) {
+#if DEBUG
+        Serial.printf("Initial move pattern done after %f seconds\r\n", INITIAL_MOVE_DURATION/1000.0);
+#endif
         gotoDirectionalPointState();
     }
 }
