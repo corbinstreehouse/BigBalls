@@ -13,9 +13,9 @@
 #define NUMBER_LEDS_PER_GROUP (8*4) // 4 rows of 8 in a square
 #define NUM_LEDS (NUMBER_LEDS_PER_GROUP*NUMBER_GROUPS)
 
-#define LED_PIN 13 // ?
+#define LED_PIN 11 // corbin, using 11 for testing
 #define BRIGHTNESS  64
-#define LED_TYPE    WS2811
+#define LED_TYPE    WS2812
 #define COLOR_ORDER GRB
 
 #define DEBUG 1
@@ -34,32 +34,6 @@ typedef CD_ENUM(int16_t, CDBallPoint)  {
     CDBallPointWest,
     CDBallPointDown
 };
-
-//typedef CD_ENUM(int16_t, CDBallDirection)  {
-//    CDBallDirectionNorthWestUp = 0,
-//
-//    CDWheelCommandNextPattern = CDWheelCommandFirst,
-//    CDWheelCommandPriorPattern = 1,
-//    CDWheelCommandNextSequence = 2,
-//    CDWheelCommandPriorSequence = 3,
-//    CDWheelCommandRestartSequence = 4,
-//    CDWheelCommandStartCalibrating = 5,
-//    CDWheelCommandEndCalibrating = 6,
-//    CDWheelCommandCancelCalibrating = 7,
-//    CDWheelCommandStartSavingGyroData = 8,
-//    CDWheelCommandEndSavingGyroData = 9,
-//
-//    CDWheelCommandPlay = 10,
-//    CDWheelCommandPause = 11,
-//
-//    CDWheelCommandLast = CDWheelCommandPause,
-//    CDWheelCommandCount = CDWheelCommandLast + 1,
-//};
-
-
-
-
-
 
 
 
