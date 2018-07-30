@@ -14,3 +14,5 @@ See "Ball Orientation Side View" and "Ball Orientation Top View" to get a feel f
 An LED group is a group of LEDs on one pentagon. I think we are having 8 x 8 squares in each group (ie: 32 LEDs).
 
 Where four pentagons intersect, we will have a "Ball Point".  Based on each point, we can identify an individual pentagon, such as "North West Up".  Wire the strips from #1 starting  in the "North West Up" group to "North east up" to "south east up" to "south west up", thus completing the "up" point. 
+
+Test Change
