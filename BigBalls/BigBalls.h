@@ -24,4 +24,12 @@
 
 extern LEDPatterns g_patterns;
 
+extern CRGB *g_LEDs;
+extern CRGB *g_LEDsPastEnd; // 
+
+// Ball specific things implemented in each file
+extern void initializeBall();
+extern void doDirectionalPoint(float degrees);
+
+
 #endif /* BigBalls_hpp */

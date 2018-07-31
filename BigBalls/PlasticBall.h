@@ -8,7 +8,6 @@
 #ifndef PlasticBall_hpp
 #define PlasticBall_hpp
 
-void doDirectionalPoint();
 
 
 #endif /* PlasticBall_hpp */

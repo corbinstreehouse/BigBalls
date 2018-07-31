@@ -13,7 +13,7 @@
 #define WAIT_TIME_BEFORE_COLOR_CHANGE (WAIT_FADE_DURATION*2) // Go to the next rainbow color after this amount of time in MS. IE: every 3 seconds the hue changes. This should be much bigger than the last value..
 
 // How long to do the initial color flash when initially moved
-#define INITIAL_MOVE_DURATION (5*1000) // in ms. X seconds
+#define INITIAL_MOVE_DURATION (3*1000) // in ms. X seconds
 
 #define WAIT_TIME_BEFORE_GOING_TO_SLEEP (10*1000) // in ms. 10 seconds with no movement, and then go to sleep mode again (soft glow)
 
@@ -29,7 +29,12 @@
 
 #include "LEDPatternType.h" // Defines CD_ENUM
 
+// Non static globals
 LEDPatterns g_patterns(NUM_LEDS);
+CRGB *g_LEDs;
+CRGB *g_LEDsPastEnd;
+
+
 static uint32_t g_lastTimeInMS = 0; // in milliseconds
 static uint32_t g_lastMovedTime = 0;
 
@@ -42,12 +47,13 @@ typedef CD_ENUM(int16_t, CDBallState)  {
 
 CDBallState g_ballState = CDBallStateWaiting;
 
-void gotoWaitingState();
+static void gotoWaitingState();
 
 
 #if DEBUG
 static uint32_t g_movedTestTime = 0;
 #endif
+static float g_lastDirectionInDegrees = 0; // Till i get vectors hookedup
 
 bool checkBallMoved() {
     bool result = false;
@@ -91,9 +97,16 @@ void setup() {
     g_patterns.setPatternDuration(50);
     g_patterns.setPatternColor(CRGB::Red);
 
-    FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(g_patterns.getLEDs(), NUM_LEDS).setCorrection(TypicalLEDStrip);
+    // Save off the LED pointer
+    g_LEDs = g_patterns.getLEDs();
+    g_LEDsPastEnd = &g_LEDs[NUM_LEDS];
+    
+    FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(g_LEDs, NUM_LEDS).setCorrection(TypicalLEDStrip);
     FastLED.setBrightness( BRIGHTNESS);
     //    FastLED.setMaxPowerInVoltsAndMilliamps(5.0, 18000);
+    
+    initializeBall();
+    
 #if DEBUG
     g_movedTestTime = millis();
 #endif
@@ -102,7 +115,7 @@ void setup() {
 
 uint8_t g_lastHueColor = 0;
 
-void doWaiting() {
+static void doWaiting() {
     // Should we glow to the next color?
     if (g_lastTimeInMS - millis() >= WAIT_TIME_BEFORE_COLOR_CHANGE) {
         g_lastHueColor++; // unsigned 8 bit.... auto wrap past 255 back to 0.
@@ -114,17 +127,39 @@ void doWaiting() {
     g_patterns.show();
 }
 
-extern void doDirectionalPoint();
+// TODO: vector stuff instead of degrees
+static float getDirectionalVector() {
+    // TODO: vector return
+#if DEBUG
+    return g_lastDirectionInDegrees; //
+#endif
+    return 0;
+}
 
-void gotoDirectionalPointState() {
+static void gotoDirectionalPointState() {
 #if DEBUG
     Serial.println("--- gotoDirectionalPointState");
     g_movedTestTime = millis(); // reset for debugging
 #endif
-
     g_ballState = CDBallStateDirectionalPoint;
     
-    doDirectionalPoint();
+    // Clear the LEDs and set our pattern to be "nothing" so we can manually update individual ones with FastLED
+    g_patterns.setPatternType(LEDPatternTypeDoNothing);
+    
+#if DEBUG
+    g_lastDirectionInDegrees = g_lastDirectionInDegrees + 9; // change by 10 degrees each pass
+#else
+    g_lastDirectionInDegrees = getDirectionalVector();
+#endif
+    doDirectionalPoint(g_lastDirectionInDegrees);
+}
+
+static void updateDirectionalPointIfNeeded() {
+    float possibleNewDirection = getDirectionalVector();
+    if (g_lastDirectionInDegrees != possibleNewDirection) {
+        g_lastDirectionInDegrees = possibleNewDirection;
+        doDirectionalPoint(g_lastDirectionInDegrees);
+    }
 }
 
 void doBadDirection() {
@@ -133,7 +168,7 @@ void doBadDirection() {
     g_ballState = CDBallStateDirectionalPoint; // Go back to directional pointing for the time
 }
 
-void gotoWaitingState() {
+static void gotoWaitingState() {
 #if DEBUG
     Serial.println("------- gotoWaitingState");
     g_movedTestTime = millis();
@@ -221,7 +256,8 @@ void loop() {
             if (hasNotMovedInWhile()) {
                 gotoWaitingState();
             } else {
-                doDirectionalPoint();
+                // Highlight the new direction, if needed
+                updateDirectionalPointIfNeeded();
             }
             break;
         }
