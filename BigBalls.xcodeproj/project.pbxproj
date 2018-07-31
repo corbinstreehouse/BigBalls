@@ -77,6 +77,7 @@
 		9D0EED6A1BFC3747002C687E /* Wire.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D0EED461BFC3747002C687E /* Wire.cpp */; };
 		9D684AC81C17E9BD0058EFA0 /* CDLazyBitmap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D684AC61C17E9BD0058EFA0 /* CDLazyBitmap.cpp */; };
 		9D91E1CC21028370009BF31C /* BigBalls.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D91E1CA21028370009BF31C /* BigBalls.cpp */; };
+		9D960B9421100A9300BDA888 /* PlasticBall.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D960B9221100A9300BDA888 /* PlasticBall.cpp */; };
 		9DAF74E81C2CD8A200B43F75 /* colorpalettes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9DAF744F1C2CD8A200B43F75 /* colorpalettes.cpp */; };
 		9DAF74E91C2CD8A200B43F75 /* colorutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9DAF74511C2CD8A200B43F75 /* colorutils.cpp */; };
 		9DAF74EA1C2CD8A200B43F75 /* FastLED.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9DAF74921C2CD8A200B43F75 /* FastLED.cpp */; };
@@ -1341,6 +1342,8 @@
 		9D91E1CA21028370009BF31C /* BigBalls.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = BigBalls.cpp; sourceTree = "<group>"; };
 		9D91E1CB21028370009BF31C /* BigBalls.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BigBalls.h; sourceTree = "<group>"; };
 		9D922F0C17C711630097A027 /* Arduino micro.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Arduino micro.xcconfig"; sourceTree = "<group>"; };
+		9D960B9221100A9300BDA888 /* PlasticBall.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PlasticBall.cpp; sourceTree = "<group>"; };
+		9D960B9321100A9300BDA888 /* PlasticBall.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PlasticBall.h; sourceTree = "<group>"; };
 		9DAF744B1C2CD8A200B43F75 /* .gitignore */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		9DAF744C1C2CD8A200B43F75 /* bitswap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bitswap.h; sourceTree = "<group>"; };
 		9DAF744D1C2CD8A200B43F75 /* chipsets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = chipsets.h; sourceTree = "<group>"; };
@@ -4000,6 +4003,8 @@
 				9D8ED2C417C01F7F001E1C06 /* Config */,
 				9D91E1CB21028370009BF31C /* BigBalls.h */,
 				9D91E1CA21028370009BF31C /* BigBalls.cpp */,
+				9D960B9321100A9300BDA888 /* PlasticBall.h */,
+				9D960B9221100A9300BDA888 /* PlasticBall.cpp */,
 				9D8ED2D317C01F7F001E1C06 /* Makefile */,
 				9D8ED2D417C01F7F001E1C06 /* Makefiles */,
 			);
@@ -4717,6 +4722,7 @@
 				9D0EEC411BFC372F002C687E /* nonstd.c in Sources */,
 				9DAF74EC1C2CD8A200B43F75 /* lib8tion.cpp in Sources */,
 				9D684AC81C17E9BD0058EFA0 /* CDLazyBitmap.cpp in Sources */,
+				9D960B9421100A9300BDA888 /* PlasticBall.cpp in Sources */,
 				9D0EED541BFC3747002C687E /* Makefile in Sources */,
 				9D0EED561BFC3747002C687E /* Makefile in Sources */,
 				9DAF74E81C2CD8A200B43F75 /* colorpalettes.cpp in Sources */,

@@ -1,5 +1,5 @@
 //
-//  BigBalls.hpp
+//  BigBalls.h
 //  Index
 //
 //  Created by Corbin Dunn on 7/20/18.
@@ -7,6 +7,8 @@
 
 #ifndef BigBalls_hpp
 #define BigBalls_hpp
+
+#include "LEDPatterns.h"
 
 // A section or group of LEDs
 #define NUMBER_GROUPS 24
@@ -20,21 +22,6 @@
 
 #define DEBUG 1
 
-
-///////////
-
-#include "LEDPatternType.h" // Defines CD_ENUM
-
-
-typedef CD_ENUM(int16_t, CDBallPoint)  {
-    CDBallPointUp,
-    CDBallPointNorth,
-    CDBallPointEast,
-    CDBallPointSouth,
-    CDBallPointWest,
-    CDBallPointDown
-};
-
-
+extern LEDPatterns g_patterns;
 
 #endif /* BigBalls_hpp */

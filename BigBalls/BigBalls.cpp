@@ -7,7 +7,6 @@
 
 #include "BigBalls.h"
 #include "FastLED.h"
-#include "LEDPatterns.h"
 
 ///////////////// PARAMETERS YOU CAN TWEAK
 #define WAIT_FADE_DURATION (5*1000) // Duration the fade takes when in the wiating state, in ms (5 seconds)
@@ -26,7 +25,11 @@
 #endif
 
 
-static LEDPatterns g_patterns(NUM_LEDS);
+///////////
+
+#include "LEDPatternType.h" // Defines CD_ENUM
+
+LEDPatterns g_patterns(NUM_LEDS);
 static uint32_t g_lastTimeInMS = 0; // in milliseconds
 static uint32_t g_lastMovedTime = 0;
 
@@ -111,6 +114,8 @@ void doWaiting() {
     g_patterns.show();
 }
 
+extern void doDirectionalPoint();
+
 void gotoDirectionalPointState() {
 #if DEBUG
     Serial.println("--- gotoDirectionalPointState");
@@ -121,19 +126,6 @@ void gotoDirectionalPointState() {
     
     doDirectionalPoint();
 }
-
-void doDirectionalPoint() {
-#if DEBUG
- 
-#endif
-    // TODO: calculate direction...and update stuff here...
-    g_lastTimeInMS = millis();
-    g_patterns.setPatternType(LEDPatternTypeSolidColor);
-    g_patterns.setPatternColor(CRGB::Green);
-
-}
-
-
 
 void doBadDirection() {
     g_patterns.flashThreeTimes(CRGB::Red); // Flash red (synchronous call)
