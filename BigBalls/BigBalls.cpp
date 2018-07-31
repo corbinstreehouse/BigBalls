@@ -18,9 +18,10 @@
 
 #define WAIT_TIME_BEFORE_GOING_TO_SLEEP (10*1000) // in ms. 10 seconds with no movement, and then go to sleep mode again (soft glow)
 
+
 #if DEBUG
 
-    #define MOVED_TEST_DURATION (10*1000) // in ms. after X seconds pretend we moved
+    #define FAKE_A_MOVE_TEST_DURATION (10*1000) // in ms. after X seconds pretend we moved
 
 #endif
 
@@ -49,10 +50,11 @@ bool checkBallMoved() {
     bool result = false;
     // TODO: This should return YES if it was moved and starts some other state transitions
 #if DEBUG
-    if ((millis() - g_movedTestTime) > MOVED_TEST_DURATION) {
-#if DEBUG
-        Serial.printf("DEBUG!! Faking a move after %f seconds.\r\n", MOVED_TEST_DURATION/1000.0);
-#endif
+    if (g_movedTestTime == 0) {
+        g_movedTestTime = millis(); // initialize for debugging
+    }
+    if ((millis() - g_movedTestTime) > FAKE_A_MOVE_TEST_DURATION) {
+        Serial.printf("DEBUG!! Faking a move after %f seconds.\r\n", FAKE_A_MOVE_TEST_DURATION/1000.0);
         result = true;
     }
 #endif
@@ -61,6 +63,17 @@ bool checkBallMoved() {
         g_lastMovedTime = millis();
     }
     return result;
+}
+
+bool hasNotMovedInWhile() {
+    if (checkBallMoved()) {
+        return false;
+    }
+    // If we haven't moved in a while, then wait for a bit before we stop doing the directional point
+    if ((millis() - g_lastMovedTime) >= WAIT_TIME_BEFORE_GOING_TO_SLEEP) {
+        return true;
+    }
+    return false;
 }
 
 
@@ -101,30 +114,39 @@ void doWaiting() {
 void gotoDirectionalPointState() {
 #if DEBUG
     Serial.println("--- gotoDirectionalPointState");
+    g_movedTestTime = millis(); // reset for debugging
 #endif
 
     g_ballState = CDBallStateDirectionalPoint;
     
+    doDirectionalPoint();
+}
+
+void doDirectionalPoint() {
+#if DEBUG
+ 
+#endif
+    // TODO: calculate direction...and update stuff here...
     g_lastTimeInMS = millis();
     g_patterns.setPatternType(LEDPatternTypeSolidColor);
     g_patterns.setPatternColor(CRGB::Green);
 
 }
 
-void doDirectionalPoint() {
-    // corbin...stuff here.
-    
-}
 
 
 void doBadDirection() {
-    
+    g_patterns.flashThreeTimes(CRGB::Red); // Flash red (synchronous call)
+    g_lastMovedTime = millis(); // Reset the time we were last moved to be now
+    g_ballState = CDBallStateDirectionalPoint; // Go back to directional pointing for the time
 }
 
 void gotoWaitingState() {
 #if DEBUG
     Serial.println("------- gotoWaitingState");
+    g_movedTestTime = millis();
 #endif
+    g_ballState = CDBallStateWaiting;
 
     // Do a low-level glow of various colors; start the timer and set the pattern to show
     g_lastTimeInMS = millis();
@@ -140,19 +162,21 @@ void gotoWaitingState() {
     g_patterns.show();
 }
 
-#define SKIP_COUNT 8
+#define SKIP_COUNT 9
 // Don't do these patterns; they suck for this setup
-static const LEDPatternType g_patternsToSkip[SKIP_COUNT] = { LEDPatternTypeSolidColor, LEDPatternTypeFadeOut, LEDPatternTypeFadeIn, LEDPatternTypeDoNothing, LEDPatternTypeImageReferencedBitmap, LEDPatternTypeImageEntireStrip_UNUSED, LEDPatternTypeBitmap, LEDPatternTypeFadeInFadeOut };
+static const LEDPatternType g_patternsToSkip[SKIP_COUNT] = { LEDPatternTypeSolidColor, LEDPatternTypeFadeOut, LEDPatternTypeFadeIn, LEDPatternTypeColorWipe, LEDPatternTypeDoNothing, LEDPatternTypeImageReferencedBitmap, LEDPatternTypeImageEntireStrip_UNUSED, LEDPatternTypeBitmap, LEDPatternTypeFadeInFadeOut };
 static int g_NextMovePatternToUse = LEDPatternTypeMin;
 
 void gotoInitialMovedState() {
 #if DEBUG
     Serial.println("------- gotoInitialMovedState");
+    
+    
 #endif
 
     // Do a pattern (not random) to indicate something is going to happen. Do it for 3 seconds, then flash
     g_ballState = CDBallStateInitialMovePattern;
-    g_patterns.flashThreeTimes(CRGB::Green); /// this call is synchronous and will return when done
+//    g_patterns.flashThreeTimes(CRGB::Green); /// this call is synchronous and will return when done
     // Then a random cool pattern for INITIAL_MOVE_DURATION time duration
     g_lastTimeInMS = millis();
     g_patterns.setPatternType((LEDPatternType)g_NextMovePatternToUse);
@@ -184,6 +208,7 @@ void doInitialMovePattern() {
     }
 }
 
+        
 
 void loop() {
     switch (g_ballState) {
@@ -200,7 +225,12 @@ void loop() {
             break;
         }
         case CDBallStateDirectionalPoint: {
-            doDirectionalPoint;
+            // Are we done directional?
+            if (hasNotMovedInWhile()) {
+                gotoWaitingState();
+            } else {
+                doDirectionalPoint();
+            }
             break;
         }
         case CDBallStateBadDirection: {

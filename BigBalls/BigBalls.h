@@ -10,7 +10,7 @@
 
 // A section or group of LEDs
 #define NUMBER_GROUPS 24
-#define NUMBER_LEDS_PER_GROUP (8*4) // 4 rows of 8 in a square
+#define NUMBER_LEDS_PER_GROUP (8+6+8+6) // The pattern Mayra told me
 #define NUM_LEDS (NUMBER_LEDS_PER_GROUP*NUMBER_GROUPS)
 
 #define LED_PIN 11 // corbin, using 11 for testing
