@@ -23,6 +23,21 @@
 
 #define DEGREE_VARIATION_FOR_CARDINAL_POINT 10 // if we are within <value> degrees from a cardinal point, we will highlight all four pentagons. Otherwise, we higlight two (or maybe one)
 
+typedef CD_ENUM(int16_t, CDCardinalDirection) {
+    CDCardinalDirectionNorth = 0,
+    CDCardinalDirectionEast,
+    CDCardinalDirectionSouth,
+    CDCardinalDirectionWest,
+    CDCardinalDirectionUnknown
+};
+
+#if DEBUG
+static char *c_cardinalDirectionNames[] = {
+    "North", "East", "South", "West", "Unknown"
+};
+#endif
+
+
 static inline CRGB *wrapPointIfNeeded(CRGB *point) {
     int amountPast = g_LEDsPastEnd - point;
     if (amountPast >= 0) {
@@ -42,20 +57,13 @@ static inline void highlightCardinalPoint(CRGB *pointStart) {
     }
 }
 
-static void highlightDirection(float degrees, CRGB *northStart) {
-    while (degrees > 360) {
-        degrees = degrees - 360;
-    }
-
-    // Fill all black...unless we have to walk everything then i can do it in the walk
-    fill_solid(g_LEDs, NUM_LEDS, CRGB::Black);
-    
+static CDCardinalDirection computeClosestCardinalDirectionFromDegrees(float degrees, float offsetDegrees) {
     // Which cardinal direction are we closest to? (starting north, going clockwise)
-    int offsetLocation = 0;
-    for (float cardinalDirection = 0; cardinalDirection < 360; cardinalDirection = cardinalDirection + 90) {
+    CDCardinalDirection cardinalDirection = CDCardinalDirectionNorth;
+    for (float compassValue = 0; compassValue < 360; compassValue = compassValue + 90) {
         // Special case north
-        float minCardinal = cardinalDirection - DEGREE_VARIATION_FOR_CARDINAL_POINT;
-        float maxCardinal = cardinalDirection + DEGREE_VARIATION_FOR_CARDINAL_POINT;
+        float minCardinal = compassValue - offsetDegrees;
+        float maxCardinal = compassValue + offsetDegrees;
         if (minCardinal < 0) {
             minCardinal += 360;
             if (degrees >= minCardinal && degrees < 360) {
@@ -68,53 +76,36 @@ static void highlightDirection(float degrees, CRGB *northStart) {
                 break;
             }
         }
-        offsetLocation++;
+        cardinalDirection = static_cast<CDCardinalDirection>((int)cardinalDirection + 1);
     }
-#if DEBUG
-    Serial.print("highlight cardinal group ");
-    switch (offsetLocation) {
-        case 0: {
-            Serial.println("north");
-            break;
-        }
-        case 1: {
-            Serial.println("east");
-            break;
-        }
-        case 2: {
-            Serial.println("south");
-            break;
-        }
-        case 3: {
-            Serial.println("west");
-            break;
-        }
-        default: {
-            Serial.println("other");
-            break;
-        }
+    return cardinalDirection;
+}
 
+static void highlightDirection(float degrees, CRGB *northStart) {
+    while (degrees > 360) {
+        degrees = degrees - 360;
     }
+
+    // Fill all black...unless we have to walk everything then i can do it in the walk
+    fill_solid(g_LEDs, NUM_LEDS, CRGB::Black);
+
+    // For ease of use, highlight all four in the main cardinal direction we are pointing
+    CDCardinalDirection cardinalDirection = computeClosestCardinalDirectionFromDegrees(degrees, 45);
+    
+#if DEBUG
+    Serial.printf("degrees %f: highlight cardinal group %s (value: %d)\r\n", degrees, c_cardinalDirectionNames[cardinalDirection], cardinalDirection);
 #endif
     
-    // If less then 4, then we found a cardinal group
-    if (offsetLocation < 4) {
-        int offset = NUMBER_GROUPS_PER_CARDINAL_POINT*NUMBER_LEDS_PER_GROUP*offsetLocation;
+    if (cardinalDirection < CDCardinalDirectionUnknown) {
+        int offset = NUMBER_GROUPS_PER_CARDINAL_POINT*NUMBER_LEDS_PER_GROUP*cardinalDirection;
         highlightCardinalPoint(&northStart[offset]);
     } else {
-        // We have to do more...highlight more specific things
+        // We shouldn't hit this..
+        g_patterns.flashThreeTimes(CRGB::Red);
+#if DEBUG
+        Serial.printf("Error computing cardinal direction for %f\r\n", degrees);
+#endif
     }
-    
-//
-//    } else {
-//#if DEBUG
-//        Serial.println("highlight somethign else");
-//#endif
-//
-//    }
-    
-    
-    
     
 }
 

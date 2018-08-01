@@ -15,15 +15,14 @@
 // How long to do the initial color flash when initially moved
 #define INITIAL_MOVE_DURATION (3*1000) // in ms. X seconds
 
-#define WAIT_TIME_BEFORE_GOING_TO_SLEEP (10*1000) // in ms. 10 seconds with no movement, and then go to sleep mode again (soft glow)
+#define WAIT_TIME_BEFORE_GOING_TO_SLEEP (2*1000) // in ms. 10 seconds with no movement, and then go to sleep mode again (soft glow)
 
 
 #if DEBUG
 
-    #define FAKE_A_MOVE_TEST_DURATION (10*1000) // in ms. after X seconds pretend we moved
+    #define FAKE_A_MOVE_TEST_DURATION (2*1000) // in ms. after X seconds pretend we moved (10?
 
 #endif
-
 
 ///////////
 
@@ -36,7 +35,6 @@ CRGB *g_LEDsPastEnd;
 
 
 static uint32_t g_lastTimeInMS = 0; // in milliseconds
-static uint32_t g_lastMovedTime = 0;
 
 typedef CD_ENUM(int16_t, CDBallState)  {
     CDBallStateWaiting,
@@ -62,15 +60,13 @@ bool checkBallMoved() {
     if (g_movedTestTime == 0) {
         g_movedTestTime = millis(); // initialize for debugging
     }
-    if ((millis() - g_movedTestTime) > FAKE_A_MOVE_TEST_DURATION) {
-        Serial.printf("DEBUG!! Faking a move after %f seconds.\r\n", FAKE_A_MOVE_TEST_DURATION/1000.0);
-        result = true;
+    if (g_ballState == CDBallStateWaiting) {
+        if ((millis() - g_movedTestTime) > FAKE_A_MOVE_TEST_DURATION) {
+            Serial.printf("DEBUG!! Faking a move after %f seconds.\r\n", FAKE_A_MOVE_TEST_DURATION/1000.0);
+            result = true;
+        }
     }
 #endif
-    // keep track of how long we last moved
-    if (result) {
-        g_lastMovedTime = millis();
-    }
     return result;
 }
 
@@ -79,7 +75,7 @@ bool hasNotMovedInWhile() {
         return false;
     }
     // If we haven't moved in a while, then wait for a bit before we stop doing the directional point
-    if ((millis() - g_lastMovedTime) >= WAIT_TIME_BEFORE_GOING_TO_SLEEP) {
+    if ((millis() - g_lastTimeInMS) >= WAIT_TIME_BEFORE_GOING_TO_SLEEP) {
         return true;
     }
     return false;
@@ -137,6 +133,7 @@ static float getDirectionalVector() {
 }
 
 static void gotoDirectionalPointState() {
+    g_lastTimeInMS = millis();
 #if DEBUG
     Serial.println("--- gotoDirectionalPointState");
     g_movedTestTime = millis(); // reset for debugging
@@ -147,7 +144,7 @@ static void gotoDirectionalPointState() {
     g_patterns.setPatternType(LEDPatternTypeDoNothing);
     
 #if DEBUG
-    g_lastDirectionInDegrees = g_lastDirectionInDegrees + 9; // change by 10 degrees each pass
+    g_lastDirectionInDegrees = g_lastDirectionInDegrees + 40; // change by 10 degrees each pass
 #else
     g_lastDirectionInDegrees = getDirectionalVector();
 #endif
@@ -164,7 +161,7 @@ static void updateDirectionalPointIfNeeded() {
 
 void doBadDirection() {
     g_patterns.flashThreeTimes(CRGB::Red); // Flash red (synchronous call)
-    g_lastMovedTime = millis(); // Reset the time we were last moved to be now
+    g_lastTimeInMS = millis(); // Reset the time we were last moved to be now
     g_ballState = CDBallStateDirectionalPoint; // Go back to directional pointing for the time
 }
 
