@@ -186,9 +186,14 @@ static void gotoWaitingState() {
     g_patterns.show();
 }
 
+#if DEBUG
+#include "RamMonitor.h"
+static RamMonitor ram;
+#endif
+
 #define SKIP_COUNT 9
 // Don't do these patterns; they suck for this setup
-static const LEDPatternType g_patternsToSkip[SKIP_COUNT] = { LEDPatternTypeSolidColor, LEDPatternTypeFadeOut, LEDPatternTypeFadeIn, LEDPatternTypeColorWipe, LEDPatternTypeDoNothing, LEDPatternTypeImageReferencedBitmap, LEDPatternTypeImageEntireStrip_UNUSED, LEDPatternTypeBitmap, LEDPatternTypeFadeInFadeOut };
+static const LEDPatternType g_patternsToSkip[SKIP_COUNT] = { LEDPatternTypeSolidColor, LEDPatternTypeFadeOut, LEDPatternTypeFadeIn, LEDPatternTypeColorWipe, LEDPatternTypeDoNothing, /*LEDPatternTypeImageEntireStrip_UNUSED, LEDPatternTypeBitmap, */LEDPatternTypeFadeInFadeOut };
 static int g_NextMovePatternToUse = LEDPatternTypeMin;
 
 void gotoInitialMovedState() {
@@ -206,6 +211,11 @@ void gotoInitialMovedState() {
     g_patterns.setPatternType((LEDPatternType)g_NextMovePatternToUse);
     g_patterns.setPatternDuration(INITIAL_MOVE_DURATION/3); // in ms...not sure this is what i want to do, as each pattern has a better duration
     g_patterns.setPatternColor(CRGB::DarkViolet); // TODO: random color
+    
+#if DEBUG
+    Serial.printf("Going to pattern #: %d (count %d). Free ram: %d, free heap: %d, free stack %d\r\n", g_NextMovePatternToUse, LEDPatternTypeCount, ram.free(), ram.heap_free(), ram.stack_free());
+#endif
+    
     // Setup the next
     g_NextMovePatternToUse++;
     if (g_NextMovePatternToUse >= LEDPatternTypeCount) {
@@ -213,13 +223,16 @@ void gotoInitialMovedState() {
     } else {
         // skip bad ones; order is important
         for (int i = 0; i < SKIP_COUNT; i++) {
+            if (g_NextMovePatternToUse >= LEDPatternTypeCount) {
+                g_NextMovePatternToUse = LEDPatternTypeMin;
+                break;
+            }
             if (g_NextMovePatternToUse == g_patternsToSkip[i]) {
                 g_NextMovePatternToUse++;
-            } else {
-                break;
             }
         }
     }
+
 }
 
 void doInitialMovePattern() {
