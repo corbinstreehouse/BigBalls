@@ -58,17 +58,20 @@ static inline void highlightCardinalPoint(CRGB *pointStart) {
 }
 
 static CDCardinalDirection computeClosestCardinalDirectionFromDegrees(float degrees, float offsetDegrees) {
-    // Which cardinal direction are we closest to? (starting north, going clockwise)
+    while (degrees >= 360.0) {
+        degrees = degrees - 360.0;
+    }
+        // Which cardinal direction are we closest to? (starting north, going clockwise)
     CDCardinalDirection cardinalDirection = CDCardinalDirectionNorth;
-    for (float compassValue = 0; compassValue < 360; compassValue = compassValue + 90) {
+    for (float compassValue = 0; compassValue < 360.0; compassValue = compassValue + 90.0) {
         // Special case north
         float minCardinal = compassValue - offsetDegrees;
         float maxCardinal = compassValue + offsetDegrees;
-        if (minCardinal < 0) {
-            minCardinal += 360;
-            if (degrees >= minCardinal && degrees < 360) {
+        if (minCardinal < 0.0) {
+            minCardinal += 360.0;
+            if (degrees >= minCardinal && degrees < 360.0) {
                 break; // North
-            } else if (degrees >= 0 && degrees < maxCardinal) {
+            } else if (degrees >= 0.0 && degrees < maxCardinal) {
                 break; // North
             }
         } else {
@@ -82,10 +85,6 @@ static CDCardinalDirection computeClosestCardinalDirectionFromDegrees(float degr
 }
 
 static void highlightDirection(float degrees, CRGB *northStart) {
-    while (degrees > 360) {
-        degrees = degrees - 360;
-    }
-
     // Fill all black...unless we have to walk everything then i can do it in the walk
     fill_solid(g_LEDs, NUM_LEDS, CRGB::Black);
 
@@ -104,6 +103,7 @@ static void highlightDirection(float degrees, CRGB *northStart) {
         g_patterns.flashThreeTimes(CRGB::Red);
 #if DEBUG
         Serial.printf("Error computing cardinal direction for %f\r\n", degrees);
+//        delay(10000); // debug value 360 that is failing
 #endif
     }
     
