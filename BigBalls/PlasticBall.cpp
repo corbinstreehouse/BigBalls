@@ -11,7 +11,7 @@
 // Things specific to the plastic ball
 
 // These are defined in BigBalls.h, but probably should be hidden and only in this location
-#if DEBUG
+#if X // DEBUG
     #define NUMBER_LEDS_PER_GROUP (1) // corbin testing!! so I can use a small strip
 #else
     #define NUMBER_LEDS_PER_GROUP (8+6+8+6)
