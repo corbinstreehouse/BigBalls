@@ -176,7 +176,7 @@ void setup() {
     
     intializeBNO();
     
-#if DEBUG
+#if FAKE_MOVE_EVENTS
     g_movedTestTime = millis();
 #endif
     
@@ -232,6 +232,9 @@ static void gotoDirectionalPointState() {
     g_lastTimeInMS = millis();
 #if DEBUG
     Serial.println("--- gotoDirectionalPointState");
+#endif
+    
+#if FAKE_MOVE_EVENTS
     g_movedTestTime = millis(); // reset for debugging
 #endif
     g_ballState = CDBallStateDirectionalPoint;
@@ -264,6 +267,8 @@ void doBadDirection() {
 static void gotoWaitingState() {
 #if DEBUG
     Serial.println("------- gotoWaitingState");
+#endif
+#if FAKE_MOVE_EVENTS
     g_movedTestTime = millis();
 #endif
     g_ballState = CDBallStateWaiting;
