@@ -14,12 +14,11 @@
 
 // How long to do the initial color flash when initially moved
 #define INITIAL_MOVE_DURATION (3*1000) // in ms. X seconds
-
 #define WAIT_TIME_BEFORE_GOING_TO_SLEEP (3*1000) // in ms. X seconds with no movement, and then go to sleep mode again (soft glow)
 
 #define ACCELEROMETER_DIFF_TO_CONSIDER_MOVED 0.5 // Smaller values make it more sensitive; larger values make it less sensitive
 
-#define FAKE_MOVE_EVENTS 0 // Set to 1 to test fake moving
+#define FAKE_MOVE_EVENTS !BNO_ENABLED // Set to 1 to test fake moving
 #define FAKE_A_MOVE_TEST_DURATION (2*1000) // in ms. after X seconds pretend we moved (if FAKE_MOVE_EVENTS == 1)
 
 ///////////
@@ -96,7 +95,7 @@ static bool checkBallMoved() {
     {
 #if DEBUG
 //        Serial.println("moved!");
-//        
+//
 //        Serial.println(" -- old:");
 //        printVector(g_lastAccelValue);
 //        Serial.println(" -- accel:");
