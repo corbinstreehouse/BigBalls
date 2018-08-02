@@ -7,3 +7,6 @@
 [submodule "Libraries/AdaFruit_NeoPixel"]
 	path = Libraries/AdaFruit_NeoPixel
 	url = git@github.com:corbinstreehouse/Adafruit_NeoPixel.git
+[submodule "Libraries/Adafruit_BNO055"]
+	path = Libraries/Adafruit_BNO055
+	url = https://github.com/adafruit/Adafruit_BNO055.git
