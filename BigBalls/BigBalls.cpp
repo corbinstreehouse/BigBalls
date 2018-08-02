@@ -15,7 +15,7 @@
 #define WAIT_TIME_BEFORE_COLOR_CHANGE (WAIT_FADE_DURATION*2) // Go to the next rainbow color after this amount of time in MS. IE: every 3 seconds the hue changes. This should be much bigger than the last value..
 
 // How long to do the initial color flash when initially moved
-#define INITIAL_MOVE_DURATION (3*1000) // in ms. X seconds
+#define INITIAL_MOVE_DURATION (2*1000) // in ms. X seconds
 #define WAIT_TIME_BEFORE_GOING_TO_SLEEP (3*1000) // in ms. X seconds with no movement, and then go to sleep mode again (soft glow)
 
 #define ACCELEROMETER_DIFF_TO_CONSIDER_MOVED 0.5 // Smaller values make it more sensitive; larger values make it less sensitive
@@ -36,8 +36,7 @@ CRGB *g_LEDs;
 CRGB *g_LEDsPastEnd;
 Adafruit_BNO055 g_bno = Adafruit_BNO055();
 TinyGPSPlus g_gps;
-
-
+//AltSoftSerial g_gpsSerial; // TODO: GPS serial input!
 
 static uint32_t g_lastTimeInMS = 0; // in milliseconds
 
@@ -181,12 +180,13 @@ void setup() {
 #endif
     
 #if TEST_GPS
+    // Don't even bother reading this.
     // GPS test coordinates: 37.1221962,-122.0067858
     char *testGPSCoordinate = "GPRMC,162614,A,3707.37916,N,12200.44676,W,10.0,90.0,131006,1.2,E,A";
     g_gps.encode('$');
     char *c = testGPSCoordinate;
     while (*c) {
-        Serial.print(*c);
+      //  Serial.print(*c);
         g_gps.encode(*c);
         c++;
     }
@@ -195,7 +195,7 @@ void setup() {
     sprintf(tmp, "%02X\r\n", checksum(testGPSCoordinate));
     c = tmp;
     while (*c) {
-        Serial.print(*c);
+      //  Serial.print(*c);
         g_gps.encode(*c);
         c++;
     }
@@ -219,13 +219,10 @@ static void doWaiting() {
     g_patterns.show();
 }
 
-// TODO: vector stuff instead of degrees
+// TODO: vector stuff instead of degrees; this is just returning the X
 static float getDirectionalVector() {
-    // TODO: vector return
-#if DEBUG
-    return g_lastDirectionInDegrees; //
-#endif
-    return 0;
+    imu::Vector<3> euler = g_bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+    return euler.x();
 }
 
 static void gotoDirectionalPointState() {
@@ -242,11 +239,7 @@ static void gotoDirectionalPointState() {
     // Clear the LEDs and set our pattern to be "nothing" so we can manually update individual ones with FastLED
     g_patterns.setPatternType(LEDPatternTypeDoNothing);
     
-#if DEBUG
-    g_lastDirectionInDegrees = g_lastDirectionInDegrees + 40; // change by 10 degrees each pass
-#else
     g_lastDirectionInDegrees = getDirectionalVector();
-#endif
     doDirectionalPoint(g_lastDirectionInDegrees);
 }
 
@@ -399,7 +392,12 @@ static uint32_t g_lastBNOTestTime = 0;
 
 
 static void updateGPSPosition() {
-    // TODO: feed gps the serial input from whatever provides that...
+    // TODO: feed gps the serial input from whatever provides that.
+    // Something like:
+//    while (g_gpsSerial.available() > 0) {
+//        g_gps.encode(g_gpsSerial.read());
+//    }
+    
 #if DEBUG
     if (g_gps.location.isUpdated()) {
         double distanceKm = TinyGPSPlus::distanceBetween(

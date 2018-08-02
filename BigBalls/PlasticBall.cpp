@@ -61,6 +61,9 @@ static CDCardinalDirection computeClosestCardinalDirectionFromDegrees(float degr
     while (degrees >= 360.0) {
         degrees = degrees - 360.0;
     }
+    while (degrees < 0.0) {
+        degrees += 360.0;
+    }
         // Which cardinal direction are we closest to? (starting north, going clockwise)
     CDCardinalDirection cardinalDirection = CDCardinalDirectionNorth;
     for (float compassValue = 0; compassValue < 360.0; compassValue = compassValue + 90.0) {
@@ -124,7 +127,6 @@ void doDirectionalPoint(float degrees) {
     // standard north start is the 4th group (after up), see png
     CRGB *northStart = &g_LEDs[4*NUMBER_LEDS_PER_GROUP];
     highlightDirection(degrees, northStart);
-    
     
     // We have to show
     FastLED.show();
