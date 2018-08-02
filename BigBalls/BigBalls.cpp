@@ -15,23 +15,23 @@
 // How long to do the initial color flash when initially moved
 #define INITIAL_MOVE_DURATION (3*1000) // in ms. X seconds
 
-#define WAIT_TIME_BEFORE_GOING_TO_SLEEP (2*1000) // in ms. 10 seconds with no movement, and then go to sleep mode again (soft glow)
+#define WAIT_TIME_BEFORE_GOING_TO_SLEEP (3*1000) // in ms. X seconds with no movement, and then go to sleep mode again (soft glow)
 
+#define ACCELEROMETER_DIFF_TO_CONSIDER_MOVED 0.5 // Smaller values make it more sensitive; larger values make it less sensitive
 
-#if DEBUG
-
-    #define FAKE_A_MOVE_TEST_DURATION (2*1000) // in ms. after X seconds pretend we moved (10?
-
-#endif
+#define FAKE_MOVE_EVENTS 0 // Set to 1 to test fake moving
+#define FAKE_A_MOVE_TEST_DURATION (2*1000) // in ms. after X seconds pretend we moved (if FAKE_MOVE_EVENTS == 1)
 
 ///////////
 
 #include "LEDPatternType.h" // Defines CD_ENUM
 
+
 // Non static globals
 LEDPatterns g_patterns(NUM_LEDS);
 CRGB *g_LEDs;
 CRGB *g_LEDsPastEnd;
+Adafruit_BNO055 g_bno = Adafruit_BNO055();
 
 
 static uint32_t g_lastTimeInMS = 0; // in milliseconds
@@ -43,7 +43,7 @@ typedef CD_ENUM(int16_t, CDBallState)  {
     CDBallStateBadDirection
 };
 
-CDBallState g_ballState = CDBallStateWaiting;
+static CDBallState g_ballState = CDBallStateWaiting;
 
 static void gotoWaitingState();
 
@@ -53,10 +53,24 @@ static uint32_t g_movedTestTime = 0;
 #endif
 static float g_lastDirectionInDegrees = 0; // Till i get vectors hookedup
 
-bool checkBallMoved() {
-    bool result = false;
-    // TODO: This should return YES if it was moved and starts some other state transitions
+
+static imu::Vector<3> g_lastAccelValue;
+
 #if DEBUG
+
+static void printVector(imu::Vector<3> accel) {
+    Serial.print("X: ");
+    Serial.print(accel.x());
+    Serial.print(" Y: ");
+    Serial.print(accel.y());
+    Serial.print(" Z: ");
+    Serial.println(accel.z());
+}
+#endif
+
+static bool checkBallMoved() {
+    bool result = false;
+#if FAKE_MOVE_EVENTS
     if (g_movedTestTime == 0) {
         g_movedTestTime = millis(); // initialize for debugging
     }
@@ -67,11 +81,40 @@ bool checkBallMoved() {
         }
     }
 #endif
+    
+#if BNO_ENABLED
+    
+// Uncomment to debug the values
+//    imu::Vector<3> accel = g_bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+//    printVector(accel);
+    
+    // We'll check the accelerometer to see if the thing was hit/moved;
+    imu::Vector<3> accel = g_bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    if ((accel.x() - g_lastAccelValue.x() >= ACCELEROMETER_DIFF_TO_CONSIDER_MOVED) ||
+        (accel.y() - g_lastAccelValue.y() >= ACCELEROMETER_DIFF_TO_CONSIDER_MOVED) ||
+        (accel.z() - g_lastAccelValue.z() >= ACCELEROMETER_DIFF_TO_CONSIDER_MOVED))
+    {
+#if DEBUG
+//        Serial.println("moved!");
+//        
+//        Serial.println(" -- old:");
+//        printVector(g_lastAccelValue);
+//        Serial.println(" -- accel:");
+//        printVector(accel);
+
+#endif
+        // update the value at this point
+        g_lastAccelValue = accel;
+        result = true;
+    }
+#endif
+    
     return result;
 }
 
-bool hasNotMovedInWhile() {
+static bool hasNotMovedInWhile() {
     if (checkBallMoved()) {
+        g_lastTimeInMS = millis();
         return false;
     }
     // If we haven't moved in a while, then wait for a bit before we stop doing the directional point
@@ -81,6 +124,19 @@ bool hasNotMovedInWhile() {
     return false;
 }
 
+static void intializeBNO() {
+#if BNO_ENABLED
+    if (!g_bno.begin()) {
+#if DEBUG
+        Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+#endif
+    } else {
+        g_bno.setExtCrystalUse(true);
+        delay(500); // It is slow to initialize ; wait half a second
+        g_lastAccelValue = g_bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    }
+#endif
+}
 
 void setup() {
 #if DEBUG
@@ -102,6 +158,8 @@ void setup() {
     //    FastLED.setMaxPowerInVoltsAndMilliamps(5.0, 18000);
     
     initializeBall();
+    
+    intializeBNO();
     
 #if DEBUG
     g_movedTestTime = millis();
@@ -177,7 +235,7 @@ static void gotoWaitingState() {
     g_patterns.setPatternType(LEDPatternTypeFadeInFadeOut);
     g_patterns.setPatternDuration(WAIT_FADE_DURATION); // in ms
 
-    // Generate a rainbow color that changes every X seconds
+    // Generate a color that changes every X seconds
     CHSV hsv = CHSV(g_lastHueColor, 255, 255);
     CRGB color;
     hsv2rgb_rainbow(hsv, color);
@@ -192,15 +250,13 @@ static RamMonitor ram;
 #endif
 
 #define SKIP_COUNT 9
-// Don't do these patterns; they suck for this setup
+// Don't do these patterns; they suck for this  p
 static const LEDPatternType g_patternsToSkip[SKIP_COUNT] = { LEDPatternTypeSolidColor, LEDPatternTypeFadeOut, LEDPatternTypeFadeIn, LEDPatternTypeColorWipe, LEDPatternTypeDoNothing, /*LEDPatternTypeImageEntireStrip_UNUSED, LEDPatternTypeBitmap, */LEDPatternTypeFadeInFadeOut };
 static int g_NextMovePatternToUse = LEDPatternTypeMin;
 
 void gotoInitialMovedState() {
 #if DEBUG
     Serial.println("------- gotoInitialMovedState");
-    
-    
 #endif
 
     // Do a pattern (not random) to indicate something is going to happen. Do it for 3 seconds, then flash
@@ -235,7 +291,7 @@ void gotoInitialMovedState() {
 
 }
 
-void doInitialMovePattern() {
+static void doInitialMovePattern() {
     // Do this pattern until the required time and then go to the direction state
     if ((millis() - g_lastTimeInMS) >= INITIAL_MOVE_DURATION) {
 #if DEBUG
@@ -245,9 +301,67 @@ void doInitialMovePattern() {
     }
 }
 
-        
+void print_bno(sensors_event_t event) {
+    /* The processing sketch expects data as roll, pitch, heading */
+    Serial.print(F("Orientation: "));
+    Serial.print((float)event.orientation.x);
+    Serial.print(F(" "));
+    Serial.print((float)event.orientation.y);
+    Serial.print(F(" "));
+    Serial.print((float)event.orientation.z);
+    Serial.println(F(""));
+    
+    imu::Vector<3> euler = g_bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+    Serial.print("X: ");
+    Serial.print(euler.x());
+    Serial.print(" Y: ");
+    Serial.print(euler.y());
+    Serial.print(" Z: ");
+    Serial.println(euler.z());
+    //Serial.print("\t\t");
+    
+    /* Also send calibration data for each sensor. */
+    uint8_t sys, gyro, accel, mag = 0;
+    g_bno.getCalibration(&sys, &gyro, &accel, &mag);
+    Serial.print(F("Calibration: "));
+    Serial.print(sys, DEC);
+    Serial.print(F(" "));
+    Serial.print(gyro, DEC);
+    Serial.print(F(" "));
+    Serial.print(accel, DEC);
+    Serial.print(F(" "));
+    Serial.println(mag, DEC);
+}
+#if DEBUG
+
+static void doBNOTest() {
+    
+    
+    sensors_event_t event;
+    g_bno.getEvent(&event);
+    
+    print_bno(event);
+    // Possible vector values can be:
+    // - VECTOR_ACCELEROMETER - m/s^2
+    // - VECTOR_MAGNETOMETER  - uT
+    // - VECTOR_GYROSCOPE     - rad/s
+    // - VECTOR_EULER         - degrees
+    // - VECTOR_LINEARACCEL   - m/s^2
+    // - VECTOR_GRAVITY       - m/s^2
+
+}
+
+static uint32_t g_lastBNOTestTime = 0;
+
+#endif
 
 void loop() {
+#if DEBUG
+    if (millis() - g_lastBNOTestTime >= 100) {
+//        doBNOTest();
+        g_lastBNOTestTime = millis();
+    }
+#endif
     switch (g_ballState) {
         case CDBallStateWaiting: {
             if (checkBallMoved()) {
