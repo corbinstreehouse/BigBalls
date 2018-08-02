@@ -7,6 +7,8 @@
 
 #include "BigBalls.h"
 #include "FastLED.h"
+#include "TinyGPS++.h"
+#include "LEDPatternType.h" // Defines CD_ENUM
 
 ///////////////// PARAMETERS YOU CAN TWEAK
 #define WAIT_FADE_DURATION (5*1000) // Duration the fade takes when in the wiating state, in ms (5 seconds)
@@ -21,16 +23,20 @@
 #define FAKE_MOVE_EVENTS !BNO_ENABLED // Set to 1 to test fake moving
 #define FAKE_A_MOVE_TEST_DURATION (2*1000) // in ms. after X seconds pretend we moved (if FAKE_MOVE_EVENTS == 1)
 
+const double g_towerLat = 40.783979;
+const double g_towerLong = -119.214196;
+
+#define TEST_GPS 1
+
 ///////////
-
-#include "LEDPatternType.h" // Defines CD_ENUM
-
 
 // Non static globals
 LEDPatterns g_patterns(NUM_LEDS);
 CRGB *g_LEDs;
 CRGB *g_LEDsPastEnd;
 Adafruit_BNO055 g_bno = Adafruit_BNO055();
+TinyGPSPlus g_gps;
+
 
 
 static uint32_t g_lastTimeInMS = 0; // in milliseconds
@@ -137,6 +143,16 @@ static void intializeBNO() {
 #endif
 }
 
+int checksum(const char *s) {
+    int c = 0;
+    
+    while(*s)
+        c ^= *s++;
+    
+    return c;
+}
+
+
 void setup() {
 #if DEBUG
     Serial.begin(19200);
@@ -163,6 +179,29 @@ void setup() {
 #if DEBUG
     g_movedTestTime = millis();
 #endif
+    
+#if TEST_GPS
+    // GPS test coordinates: 37.1221962,-122.0067858
+    char *testGPSCoordinate = "GPRMC,162614,A,3707.37916,N,12200.44676,W,10.0,90.0,131006,1.2,E,A";
+    g_gps.encode('$');
+    char *c = testGPSCoordinate;
+    while (*c) {
+        Serial.print(*c);
+        g_gps.encode(*c);
+        c++;
+    }
+    g_gps.encode('*');
+    char tmp[6];
+    sprintf(tmp, "%02X\r\n", checksum(testGPSCoordinate));
+    c = tmp;
+    while (*c) {
+        Serial.print(*c);
+        g_gps.encode(*c);
+        c++;
+    }
+    
+#endif
+    
     gotoWaitingState();
 }
 
@@ -300,6 +339,8 @@ static void doInitialMovePattern() {
     }
 }
 
+#if DEBUG
+
 void print_bno(sensors_event_t event) {
     /* The processing sketch expects data as roll, pitch, heading */
     Serial.print(F("Orientation: "));
@@ -331,11 +372,8 @@ void print_bno(sensors_event_t event) {
     Serial.print(F(" "));
     Serial.println(mag, DEC);
 }
-#if DEBUG
 
 static void doBNOTest() {
-    
-    
     sensors_event_t event;
     g_bno.getEvent(&event);
     
@@ -354,13 +392,42 @@ static uint32_t g_lastBNOTestTime = 0;
 
 #endif
 
-void loop() {
+
+static void updateGPSPosition() {
+    // TODO: feed gps the serial input from whatever provides that...
 #if DEBUG
+    if (g_gps.location.isUpdated()) {
+        double distanceKm = TinyGPSPlus::distanceBetween(
+                                    g_gps.location.lat(),
+                                    g_gps.location.lng(),
+                                    g_towerLat,
+                                    g_towerLong) / 1000.0;
+    
+        double courseTo = TinyGPSPlus::courseTo(
+                         g_gps.location.lat(),
+                         g_gps.location.lng(),
+                         g_towerLat,
+                         g_towerLong);
+
+        Serial.printf("starting lat: %f long %f\r\n", g_gps.location.lat(), g_gps.location.lng());
+        Serial.printf("Distance to Tower: %f km or %f miles\r\n", distanceKm, distanceKm*0.62137119);
+        Serial.printf("Course to Tower: %f degrees\r\n", courseTo);
+        Serial.print("Human directions: ");
+        Serial.println(TinyGPSPlus::cardinal(courseTo));
+    }
+#endif
+}
+
+void loop() {
+#if 0 // DEBUG // BNO test...
     if (millis() - g_lastBNOTestTime >= 100) {
-//        doBNOTest();
+        doBNOTest();
         g_lastBNOTestTime = millis();
     }
 #endif
+    
+    updateGPSPosition();
+    
     switch (g_ballState) {
         case CDBallStateWaiting: {
             if (checkBallMoved()) {

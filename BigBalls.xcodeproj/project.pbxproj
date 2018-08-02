@@ -78,7 +78,6 @@
 		9D684AC81C17E9BD0058EFA0 /* CDLazyBitmap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D684AC61C17E9BD0058EFA0 /* CDLazyBitmap.cpp */; };
 		9D91E1CC21028370009BF31C /* BigBalls.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D91E1CA21028370009BF31C /* BigBalls.cpp */; };
 		9D960B9421100A9300BDA888 /* PlasticBall.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D960B9221100A9300BDA888 /* PlasticBall.cpp */; };
-		9D960B97211293E600BDA888 /* Orientation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D960B95211293E600BDA888 /* Orientation.cpp */; };
 		9D960BB8211295EE00BDA888 /* Adafruit_BNO055.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D960BB1211295EE00BDA888 /* Adafruit_BNO055.cpp */; };
 		9D960BD42112AEBD00BDA888 /* TinyGPS++.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D960BD22112AEBD00BDA888 /* TinyGPS++.cpp */; };
 		9DAF74E81C2CD8A200B43F75 /* colorpalettes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9DAF744F1C2CD8A200B43F75 /* colorpalettes.cpp */; };
@@ -1347,8 +1346,6 @@
 		9D922F0C17C711630097A027 /* Arduino micro.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Arduino micro.xcconfig"; sourceTree = "<group>"; };
 		9D960B9221100A9300BDA888 /* PlasticBall.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PlasticBall.cpp; sourceTree = "<group>"; };
 		9D960B9321100A9300BDA888 /* PlasticBall.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PlasticBall.h; sourceTree = "<group>"; };
-		9D960B95211293E600BDA888 /* Orientation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Orientation.cpp; path = BigBalls/Orientation.cpp; sourceTree = SOURCE_ROOT; };
-		9D960B96211293E600BDA888 /* Orientation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Orientation.h; path = BigBalls/Orientation.h; sourceTree = SOURCE_ROOT; };
 		9D960B99211295EE00BDA888 /* Adafruit_BNO055.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Adafruit_BNO055.h; sourceTree = "<group>"; };
 		9D960B9A211295EE00BDA888 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		9D960B9C211295EE00BDA888 /* OBJLoader.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = OBJLoader.zip; sourceTree = "<group>"; };
@@ -4778,8 +4775,6 @@
 				9D0C64721CC46273005D7C6D /* RamMonitor.h */,
 				9D908D981C5D630500908670 /* LEDPatternType.h */,
 				9DD1E66F193EC47100290878 /* LEDPatterns.h */,
-				9D960B95211293E600BDA888 /* Orientation.cpp */,
-				9D960B96211293E600BDA888 /* Orientation.h */,
 				9DD1E66E193EC47100290878 /* LEDPatterns.cpp */,
 				9DD1E671193EC47100290878 /* README.md */,
 				9D684AC61C17E9BD0058EFA0 /* CDLazyBitmap.cpp */,
@@ -4999,7 +4994,6 @@
 				9D0EED4B1BFC3747002C687E /* Dns.cpp in Sources */,
 				9D0EEC351BFC372F002C687E /* HardwareSerial1.cpp in Sources */,
 				9D0EED691BFC3747002C687E /* twi.c in Sources */,
-				9D960B97211293E600BDA888 /* Orientation.cpp in Sources */,
 				9D0EEC441BFC372F002C687E /* ser_print.c in Sources */,
 				9D0EED4F1BFC3747002C687E /* EthernetUdp.cpp in Sources */,
 				9D0EEC4E1BFC372F002C687E /* usb_inst.cpp in Sources */,
