@@ -1326,11 +1326,11 @@
 		9D0EF19B1BFC3787002C687E /* wchar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wchar.h; sourceTree = "<group>"; };
 		9D0EF19C1BFC3787002C687E /* wctype.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wctype.h; sourceTree = "<group>"; };
 		9D0EF19D1BFC3787002C687E /* wordexp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wordexp.h; sourceTree = "<group>"; };
-		9D26BB3B210ADA9F009BE271 /* BigBalls.ino */ = {isa = PBXFileReference; lastKnownFileType = text; path = BigBalls.ino; sourceTree = "<group>"; };
 		9D26BB3C210ADAA6009BE271 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		9D684AC61C17E9BD0058EFA0 /* CDLazyBitmap.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; path = CDLazyBitmap.cpp; sourceTree = "<group>"; };
 		9D684AC71C17E9BD0058EFA0 /* CDLazyBitmap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CDLazyBitmap.h; sourceTree = "<group>"; };
 		9D77CB9D1589994A0089EB0A /* Index */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Index; sourceTree = BUILT_PRODUCTS_DIR; };
+		9D7A02132113541500396CBF /* BigBalls.ino */ = {isa = PBXFileReference; lastKnownFileType = text; name = BigBalls.ino; path = BigBalls/BigBalls.ino; sourceTree = "<group>"; };
 		9D8ED2C517C01F7F001E1C06 /* Arduino Leonardo.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Arduino Leonardo.xcconfig"; sourceTree = "<group>"; };
 		9D8ED2C617C01F7F001E1C06 /* Arduino mega2560.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Arduino mega2560.xcconfig"; sourceTree = "<group>"; };
 		9D8ED2C717C01F7F001E1C06 /* Arduino mini pro.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Arduino mini pro.xcconfig"; sourceTree = "<group>"; };
@@ -4018,7 +4018,7 @@
 			isa = PBXGroup;
 			children = (
 				9D26BB3C210ADAA6009BE271 /* README.md */,
-				9D26BB3B210ADA9F009BE271 /* BigBalls.ino */,
+				9D7A02132113541500396CBF /* BigBalls.ino */,
 				9D5201351656C2F800F3BF4E /* Arduino Reference Files */,
 				9DCC75F61589A3D300564CB8 /* Libraries */,
 				9D8ED2C217C01F7F001E1C06 /* BigBalls */,
