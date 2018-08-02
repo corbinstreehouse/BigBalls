@@ -80,6 +80,7 @@
 		9D960B9421100A9300BDA888 /* PlasticBall.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D960B9221100A9300BDA888 /* PlasticBall.cpp */; };
 		9D960B97211293E600BDA888 /* Orientation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D960B95211293E600BDA888 /* Orientation.cpp */; };
 		9D960BB8211295EE00BDA888 /* Adafruit_BNO055.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D960BB1211295EE00BDA888 /* Adafruit_BNO055.cpp */; };
+		9D960BD42112AEBD00BDA888 /* TinyGPS++.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9D960BD22112AEBD00BDA888 /* TinyGPS++.cpp */; };
 		9DAF74E81C2CD8A200B43F75 /* colorpalettes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9DAF744F1C2CD8A200B43F75 /* colorpalettes.cpp */; };
 		9DAF74E91C2CD8A200B43F75 /* colorutils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9DAF74511C2CD8A200B43F75 /* colorutils.cpp */; };
 		9DAF74EA1C2CD8A200B43F75 /* FastLED.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9DAF74921C2CD8A200B43F75 /* FastLED.cpp */; };
@@ -1371,6 +1372,19 @@
 		9D960BBA2112972700BDA888 /* Adafruit_Sensor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Adafruit_Sensor.h; sourceTree = "<group>"; };
 		9D960BBB2112972700BDA888 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		9D960BBC2112972700BDA888 /* library.properties */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = library.properties; sourceTree = "<group>"; };
+		9D960BBE2112AEBD00BDA888 /* keywords.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = keywords.txt; sourceTree = "<group>"; };
+		9D960BBF2112AEBD00BDA888 /* library.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = library.json; sourceTree = "<group>"; };
+		9D960BC22112AEBD00BDA888 /* FullExample.ino */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = FullExample.ino; sourceTree = "<group>"; };
+		9D960BC42112AEBD00BDA888 /* SatelliteTracker.ino */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SatelliteTracker.ino; sourceTree = "<group>"; };
+		9D960BC62112AEBD00BDA888 /* DeviceExample.ino */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = DeviceExample.ino; sourceTree = "<group>"; };
+		9D960BC82112AEBD00BDA888 /* UsingCustomFields.ino */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = UsingCustomFields.ino; sourceTree = "<group>"; };
+		9D960BCA2112AEBD00BDA888 /* BasicExample.ino */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = BasicExample.ino; sourceTree = "<group>"; };
+		9D960BCC2112AEBD00BDA888 /* SatElevTracker.ino */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SatElevTracker.ino; sourceTree = "<group>"; };
+		9D960BCD2112AEBD00BDA888 /* sample_satellite_elevation_log.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = sample_satellite_elevation_log.txt; sourceTree = "<group>"; };
+		9D960BCF2112AEBD00BDA888 /* KitchenSink.ino */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = KitchenSink.ino; sourceTree = "<group>"; };
+		9D960BD02112AEBD00BDA888 /* library.properties */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = library.properties; sourceTree = "<group>"; };
+		9D960BD22112AEBD00BDA888 /* TinyGPS++.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "TinyGPS++.cpp"; sourceTree = "<group>"; };
+		9D960BD32112AEBD00BDA888 /* TinyGPS++.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "TinyGPS++.h"; sourceTree = "<group>"; };
 		9DAF744B1C2CD8A200B43F75 /* .gitignore */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		9DAF744C1C2CD8A200B43F75 /* bitswap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bitswap.h; sourceTree = "<group>"; };
 		9DAF744D1C2CD8A200B43F75 /* chipsets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = chipsets.h; sourceTree = "<group>"; };
@@ -4198,6 +4212,99 @@
 			path = Libraries/Adafruit_Sensor;
 			sourceTree = SOURCE_ROOT;
 		};
+		9D960BBD2112AEBD00BDA888 /* TinyGPSPlus */ = {
+			isa = PBXGroup;
+			children = (
+				9D960BBE2112AEBD00BDA888 /* keywords.txt */,
+				9D960BBF2112AEBD00BDA888 /* library.json */,
+				9D960BC02112AEBD00BDA888 /* examples */,
+				9D960BD02112AEBD00BDA888 /* library.properties */,
+				9D960BD12112AEBD00BDA888 /* src */,
+			);
+			name = TinyGPSPlus;
+			path = Libraries/TinyGPSPlus;
+			sourceTree = SOURCE_ROOT;
+		};
+		9D960BC02112AEBD00BDA888 /* examples */ = {
+			isa = PBXGroup;
+			children = (
+				9D960BC12112AEBD00BDA888 /* FullExample */,
+				9D960BC32112AEBD00BDA888 /* SatelliteTracker */,
+				9D960BC52112AEBD00BDA888 /* DeviceExample */,
+				9D960BC72112AEBD00BDA888 /* UsingCustomFields */,
+				9D960BC92112AEBD00BDA888 /* BasicExample */,
+				9D960BCB2112AEBD00BDA888 /* SatElevTracker */,
+				9D960BCE2112AEBD00BDA888 /* KitchenSink */,
+			);
+			path = examples;
+			sourceTree = "<group>";
+		};
+		9D960BC12112AEBD00BDA888 /* FullExample */ = {
+			isa = PBXGroup;
+			children = (
+				9D960BC22112AEBD00BDA888 /* FullExample.ino */,
+			);
+			path = FullExample;
+			sourceTree = "<group>";
+		};
+		9D960BC32112AEBD00BDA888 /* SatelliteTracker */ = {
+			isa = PBXGroup;
+			children = (
+				9D960BC42112AEBD00BDA888 /* SatelliteTracker.ino */,
+			);
+			path = SatelliteTracker;
+			sourceTree = "<group>";
+		};
+		9D960BC52112AEBD00BDA888 /* DeviceExample */ = {
+			isa = PBXGroup;
+			children = (
+				9D960BC62112AEBD00BDA888 /* DeviceExample.ino */,
+			);
+			path = DeviceExample;
+			sourceTree = "<group>";
+		};
+		9D960BC72112AEBD00BDA888 /* UsingCustomFields */ = {
+			isa = PBXGroup;
+			children = (
+				9D960BC82112AEBD00BDA888 /* UsingCustomFields.ino */,
+			);
+			path = UsingCustomFields;
+			sourceTree = "<group>";
+		};
+		9D960BC92112AEBD00BDA888 /* BasicExample */ = {
+			isa = PBXGroup;
+			children = (
+				9D960BCA2112AEBD00BDA888 /* BasicExample.ino */,
+			);
+			path = BasicExample;
+			sourceTree = "<group>";
+		};
+		9D960BCB2112AEBD00BDA888 /* SatElevTracker */ = {
+			isa = PBXGroup;
+			children = (
+				9D960BCC2112AEBD00BDA888 /* SatElevTracker.ino */,
+				9D960BCD2112AEBD00BDA888 /* sample_satellite_elevation_log.txt */,
+			);
+			path = SatElevTracker;
+			sourceTree = "<group>";
+		};
+		9D960BCE2112AEBD00BDA888 /* KitchenSink */ = {
+			isa = PBXGroup;
+			children = (
+				9D960BCF2112AEBD00BDA888 /* KitchenSink.ino */,
+			);
+			path = KitchenSink;
+			sourceTree = "<group>";
+		};
+		9D960BD12112AEBD00BDA888 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				9D960BD22112AEBD00BDA888 /* TinyGPS++.cpp */,
+				9D960BD32112AEBD00BDA888 /* TinyGPS++.h */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
 		9DAF744A1C2CD8A200B43F75 /* FastLED */ = {
 			isa = PBXGroup;
 			children = (
@@ -4654,6 +4761,7 @@
 		9DCC75F61589A3D300564CB8 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
+				9D960BBD2112AEBD00BDA888 /* TinyGPSPlus */,
 				9D960BB92112972700BDA888 /* Adafruit_Sensor */,
 				9D960B98211295EE00BDA888 /* Adafruit_BNO055 */,
 				9DD1E66D193EC47100290878 /* LEDPatterns */,
@@ -4847,6 +4955,7 @@
 			files = (
 				9D0C1D0619CF3CE0004E027E /* LEDPatterns.h in Sources */,
 				9D0EEC4A1BFC372F002C687E /* touch.c in Sources */,
+				9D960BD42112AEBD00BDA888 /* TinyGPS++.cpp in Sources */,
 				9D0EEC5A1BFC372F002C687E /* yield.cpp in Sources */,
 				9D91E1CC21028370009BF31C /* BigBalls.cpp in Sources */,
 				9D0EEC341BFC372F002C687E /* eeprom.c in Sources */,

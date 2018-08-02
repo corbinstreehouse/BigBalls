@@ -13,3 +13,6 @@
 [submodule "Libraries/Adafruit_Sensor"]
 	path = Libraries/Adafruit_Sensor
 	url = https://github.com/adafruit/Adafruit_Sensor.git
+[submodule "Libraries/TinyGPSPlus"]
+	path = Libraries/TinyGPSPlus
+	url = https://github.com/mikalhart/TinyGPSPlus.git
