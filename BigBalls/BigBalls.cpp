@@ -55,8 +55,6 @@ static void gotoWaitingState();
 #if DEBUG
 static uint32_t g_movedTestTime = 0;
 #endif
-static float g_lastDirectionInDegrees = 0; // Till i get vectors hookedup
-
 
 static imu::Vector<3> g_lastAccelValue;
 
@@ -171,7 +169,6 @@ void setup() {
     FastLED.setBrightness( BRIGHTNESS);
     //    FastLED.setMaxPowerInVoltsAndMilliamps(5.0, 18000);
     
-    initializeBall();
     
     intializeBNO();
     
@@ -225,6 +222,8 @@ static float getDirectionalVector() {
     return euler.x();
 }
 
+static void updateDirectionalPoint();
+
 static void gotoDirectionalPointState() {
     g_lastTimeInMS = millis();
 #if DEBUG
@@ -239,16 +238,20 @@ static void gotoDirectionalPointState() {
     // Clear the LEDs and set our pattern to be "nothing" so we can manually update individual ones with FastLED
     g_patterns.setPatternType(LEDPatternTypeDoNothing);
     
-    g_lastDirectionInDegrees = getDirectionalVector();
-    doDirectionalPoint(g_lastDirectionInDegrees);
+    updateDirectionalPoint();
 }
 
-static void updateDirectionalPointIfNeeded() {
-    float possibleNewDirection = getDirectionalVector();
-    if (g_lastDirectionInDegrees != possibleNewDirection) {
-        g_lastDirectionInDegrees = possibleNewDirection;
-        doDirectionalPoint(g_lastDirectionInDegrees);
-    }
+static void updateDirectionalPoint() {
+    // Get an update from the sensor
+    sensors_event_t event;
+    g_bno.getEvent(&event);
+
+    // Figure out the target direction to the tower, based on our current GPS location and the tower's lat/long
+    double targetDirectionInDegrees = TinyGPSPlus::courseTo(g_gps.location.lat(),
+                                            g_gps.location.lng(),
+                                            g_towerLat,
+                                            g_towerLong);
+    doDirectionalPointWithSensorEvent(&event, targetDirectionInDegrees);
 }
 
 void doBadDirection() {
@@ -339,43 +342,10 @@ static void doInitialMovePattern() {
 
 #if DEBUG
 
-void print_bno(sensors_event_t event) {
-    /* The processing sketch expects data as roll, pitch, heading */
-    Serial.print(F("Orientation: "));
-    Serial.print((float)event.orientation.x);
-    Serial.print(F(" "));
-    Serial.print((float)event.orientation.y);
-    Serial.print(F(" "));
-    Serial.print((float)event.orientation.z);
-    Serial.println(F(""));
-    
-    imu::Vector<3> euler = g_bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    Serial.print("X: ");
-    Serial.print(euler.x());
-    Serial.print(" Y: ");
-    Serial.print(euler.y());
-    Serial.print(" Z: ");
-    Serial.println(euler.z());
-    //Serial.print("\t\t");
-    
-    /* Also send calibration data for each sensor. */
-    uint8_t sys, gyro, accel, mag = 0;
-    g_bno.getCalibration(&sys, &gyro, &accel, &mag);
-    Serial.print(F("Calibration: "));
-    Serial.print(sys, DEC);
-    Serial.print(F(" "));
-    Serial.print(gyro, DEC);
-    Serial.print(F(" "));
-    Serial.print(accel, DEC);
-    Serial.print(F(" "));
-    Serial.println(mag, DEC);
-}
-
-static void doBNOTest() {
+void print_bno() {
     sensors_event_t event;
     g_bno.getEvent(&event);
     
-    print_bno(event);
     // Possible vector values can be:
     // - VECTOR_ACCELEROMETER - m/s^2
     // - VECTOR_MAGNETOMETER  - uT
@@ -383,6 +353,40 @@ static void doBNOTest() {
     // - VECTOR_EULER         - degrees
     // - VECTOR_LINEARACCEL   - m/s^2
     // - VECTOR_GRAVITY       - m/s^2
+    
+    /* The processing sketch expects data as roll, pitch, heading */
+    Serial.printf("Orientation.x: %f\r\n", (float)event.orientation.x);
+    Serial.printf("Orientation.y: %f\r\n", (float)event.orientation.y);
+    Serial.printf("Orientation.z: %f\r\n", (float)event.orientation.z);
+    
+    imu::Vector<3> euler = g_bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+    Serial.printf("Euler.x: %f\r\n", euler.x());
+    Serial.printf("Euler.y: %f\r\n", euler.y());
+    Serial.printf("Euler.z: %f\r\n", euler.z());
+    
+    imu::Quaternion quaterion = g_bno.getQuat();
+    Serial.printf("quaterion: %f\r\n", (float)quaterion.x());
+    Serial.printf("quaterion: %f\r\n", (float)quaterion.y());
+    Serial.printf("quaterion: %f\r\n", (float)quaterion.z());
+
+    Serial.println();
+    
+//    /* Also send calibration data for each sensor. */
+//    uint8_t sys, gyro, accel, mag = 0;
+//    g_bno.getCalibration(&sys, &gyro, &accel, &mag);
+//    Serial.print(F("Calibration: "));
+//    Serial.print(sys, DEC);
+//    Serial.print(F(" "));
+//    Serial.print(gyro, DEC);
+//    Serial.print(F(" "));
+//    Serial.print(accel, DEC);
+//    Serial.print(F(" "));
+//    Serial.println(mag, DEC);
+}
+
+static void doBNOTest() {
+//    print_bno();
+
 
 }
 
@@ -422,7 +426,7 @@ static void updateGPSPosition() {
 }
 
 void loop() {
-#if 0 // DEBUG // BNO test...
+#if  DEBUG // BNO test...
     if (millis() - g_lastBNOTestTime >= 100) {
         doBNOTest();
         g_lastBNOTestTime = millis();
@@ -450,7 +454,7 @@ void loop() {
                 gotoWaitingState();
             } else {
                 // Highlight the new direction, if needed
-                updateDirectionalPointIfNeeded();
+                updateDirectionalPoint();
             }
             break;
         }

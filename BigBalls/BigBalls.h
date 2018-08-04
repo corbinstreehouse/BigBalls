@@ -34,8 +34,7 @@ extern CRGB *g_LEDs;
 extern CRGB *g_LEDsPastEnd; // One past the end of the LED array; so I can wrap to the start when re-mapping
 
 // Ball specific things implemented in each file
-extern void initializeBall();
-extern void doDirectionalPoint(float degrees);
+extern void doDirectionalPointWithSensorEvent(sensors_event_t *sensorEvent, float targetDirectionInDegrees);
 
 
 #endif /* BigBalls_hpp */

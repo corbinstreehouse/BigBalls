@@ -11,15 +11,16 @@
 // Things specific to the plastic ball
 
 // These are defined in BigBalls.h, but probably should be hidden and only in this location
-#if X // DEBUG
-    #define NUMBER_LEDS_PER_GROUP (1) // corbin testing!! so I can use a small strip
+#if 0 // corbin DEBUG
+    #define NUMBER_LEDS_PER_GROUP (2) // corbin testing!! so I can use a small strip
+    #define NUMBER_GROUPS_PER_CARDINAL_POINT 1 //// more corbin testing! 
 #else
     #define NUMBER_LEDS_PER_GROUP (8+6+8+6)
+    #define NUMBER_GROUPS_PER_CARDINAL_POINT 4 // four pentagons per cardinal point/direction
 #endif
 
 #define POINT_COLOR CRGB::Green
 
-#define NUMBER_GROUPS_PER_CARDINAL_POINT 4 // four pentagons per cardinal point/direction
 
 #define DEGREE_VARIATION_FOR_CARDINAL_POINT 10 // if we are within <value> degrees from a cardinal point, we will highlight all four pentagons. Otherwise, we higlight two (or maybe one)
 
@@ -39,7 +40,7 @@ static char *c_cardinalDirectionNames[] = {
 
 
 static inline CRGB *wrapPointIfNeeded(CRGB *point) {
-    int amountPast = g_LEDsPastEnd - point;
+    int amountPast = point - g_LEDsPastEnd;
     if (amountPast >= 0) {
         return &g_LEDs[amountPast];
     } else {
@@ -52,7 +53,8 @@ static inline void highlightCardinalPoint(CRGB *pointStart) {
     for (int i = 0; i < NUMBER_GROUPS_PER_CARDINAL_POINT; i++) {
         ledGroup = wrapPointIfNeeded(ledGroup);
         for (int j = 0; j < NUMBER_LEDS_PER_GROUP; j++) {
-            ledGroup[j] = POINT_COLOR;
+            *ledGroup = POINT_COLOR;
+            ledGroup++;
         }
     }
 }
@@ -112,21 +114,34 @@ static void highlightDirection(float degrees, CRGB *northStart) {
     
 }
 
-void initializeBall() {
-    
-}
-
 // Called from BigBalls.cpp
 // TODO: pass the vector to highlight and NOT the degrees, and our standard known vector...
-void doDirectionalPoint(float degrees) {
-#if DEBUG
-    Serial.printf("doDirectionalPoint(%f)\r\n", degrees);
+void doDirectionalPointWithSensorEvent(sensors_event_t *sensorEvent, float targetDirectionInDegrees) {
+#if  DEBUG
+    imu::Vector<3> euler = g_bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+
+    /// HACK!! hardcode the degrees based on euler for now
+    targetDirectionInDegrees = euler.x();
+    
+    Serial.printf("doDirectionalPointWithSensorEvent(.., %f)\r\n", targetDirectionInDegrees);
+    
+    
+    // TODO: maybe we have to uese the quaterion. Euler is the same as the sensorEvent's orientation value
+    Serial.printf("Euler.x: %f\r\n", euler.x());
+    Serial.printf("Euler.y: %f\r\n", euler.y());
+    Serial.printf("Euler.z: %f\r\n", euler.z());
+    
+    imu::Quaternion quaterion = g_bno.getQuat();
+    Serial.printf("quaterion: %f\r\n", (float)quaterion.x());
+    Serial.printf("quaterion: %f\r\n", (float)quaterion.y());
+    Serial.printf("quaterion: %f\r\n", (float)quaterion.z());
+
 #endif
     
     // TODO: remapping
     // standard north start is the 4th group (after up), see png
-    CRGB *northStart = &g_LEDs[4*NUMBER_LEDS_PER_GROUP];
-    highlightDirection(degrees, northStart);
+    CRGB *northStart = &g_LEDs[NUMBER_GROUPS_PER_CARDINAL_POINT*NUMBER_LEDS_PER_GROUP];
+    highlightDirection(targetDirectionInDegrees, northStart);
     
     // We have to show
     FastLED.show();
