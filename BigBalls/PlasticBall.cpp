@@ -15,10 +15,8 @@
 // These are defined in BigBalls.h, but probably should be hidden and only in this location
 #if 1 // corbin DEBUG
     #define NUMBER_LEDS_PER_PENTAGON (1) // corbin testing!! so I can use a small strip
-//    #define NUMBER_PENTAGONS_PER_CARDINAL_POINT 1 //// more corbin testing!
 #else
     #define NUMBER_LEDS_PER_PENTAGON (8+6+8+6)
-//    #define NUMBER_PENTAGONS_PER_CARDINAL_POINT 4 // four pentagons per cardinal point/direction
 #endif
 
 #define PENTAGONS_PER_CIRCLE 8 // Among a 360 view of the ball we will encounter 8 pentagons.
@@ -29,15 +27,6 @@
 
 
 #define DEGREE_VARIATION_FOR_CARDINAL_POINT 10 // if we are within <value> degrees from a cardinal point, we will highlight all four pentagons. Otherwise, we higlight two (or maybe one)
-
-// TODO: remove..not needed anymore
-typedef CD_ENUM(int16_t, CDCardinalDirection) {
-    CDCardinalDirectionNorth = 0,
-    CDCardinalDirectionEast,
-    CDCardinalDirectionSouth,
-    CDCardinalDirectionWest,
-    CDCardinalDirectionUnknown
-};
 
 // min and max are a value between 0 to less than 360. It includes 0 and excludes 360.
 typedef struct {
@@ -64,12 +53,6 @@ static BallCoordinate makeBallCoordinate(float x, float y, float z) {
     return r;
 }
 
-#if DEBUG
-static char *c_cardinalDirectionNames[] = {
-    "North", "East", "South", "West", "Unknown"
-};
-#endif
-
 // Returns a coordinate in the x/y plane (z=0) for a particular degree
 static BallCoordinate ballCoordinateFromDegrees(float degrees) {
     float rad = radians(degrees);
@@ -86,84 +69,10 @@ static void printBallCoordiante(BallCoordinate b) {
     Serial.printf("x: %.3f\ty: %.3f\t z:%.3f\r\n", b.x, b.y, b.z);
 }
 
-
-
-static CDCardinalDirection computeClosestCardinalDirectionFromDegrees(float degrees, float offsetDegrees) {
-    while (degrees >= 360.0) {
-        degrees = degrees - 360.0;
-    }
-    while (degrees < 0.0) {
-        degrees += 360.0;
-    }
-        // Which cardinal direction are we closest to? (starting north, going clockwise)
-    CDCardinalDirection cardinalDirection = CDCardinalDirectionNorth;
-    for (float compassValue = 0; compassValue < 360.0; compassValue = compassValue + 90.0) {
-        // Special case north
-        float minCardinal = compassValue - offsetDegrees;
-        float maxCardinal = compassValue + offsetDegrees;
-        if (minCardinal < 0.0) {
-            minCardinal += 360.0;
-            if (degrees >= minCardinal && degrees < 360.0) {
-                break; // North
-            } else if (degrees >= 0.0 && degrees < maxCardinal) {
-                break; // North
-            }
-        } else {
-            if (degrees >= minCardinal && degrees < maxCardinal) {
-                break;
-            }
-        }
-        cardinalDirection = static_cast<CDCardinalDirection>((int)cardinalDirection + 1);
-    }
-    return cardinalDirection;
-}
-
-#endif
-
-
-/*
-static void highlightDirection(float degrees, CRGB *northStart) {
-    // Fill all black...unless we have to walk everything then i can do it in the walk
-    fill_solid(g_LEDs, NUM_LEDS, CRGB::Black);
-
-    // For ease of use, highlight all four in the main cardinal direction we are pointing
-    CDCardinalDirection cardinalDirection = computeClosestCardinalDirectionFromDegrees(degrees, 45);
-    
-#if DEBUG
-    Serial.printf("degrees %f: highlight cardinal group %s (value: %d)\r\n", degrees, c_cardinalDirectionNames[cardinalDirection], cardinalDirection);
-#endif
-    
-    if (cardinalDirection < CDCardinalDirectionUnknown) {
-        int offset = NUMBER_PENTAGONS_PER_CARDINAL_POINT*NUMBER_LEDS_PER_PENTAGON*cardinalDirection;
-        highlightCardinalPoint(&northStart[offset]);
-    } else {
-        // We shouldn't hit this..
-        g_patterns.flashThreeTimes(CRGB::Red);
-#if DEBUG
-        Serial.printf("Error computing cardinal direction for %f\r\n", degrees);
-//        delay(10000); // debug value 360 that is failing
-#endif
-    }
-    
-}
-*/
-
-#if DEBUG
-
-static bool checkRange(float *min, float *max) {
-    if (*min >= *max) {
-        Serial.printf("RANGE ERROR: min: %.3f, max %.3f\r\n", *min, *max);
-        Serial.flush();
-        delay(100000);
-    }
-}
 static void printPentagon(BallPentagon *ballPentagon) {
     Serial.printf("minX: %.3f\t maxX: %.3f\r\n", ballPentagon->minX, ballPentagon->maxX);
-    checkRange(&ballPentagon->minX, &ballPentagon->maxX);
     Serial.printf("minY: %.3f\t maxY: %.3f\r\n", ballPentagon->minY, ballPentagon->maxY);
-    checkRange(&ballPentagon->minY, &ballPentagon->maxY);
     Serial.printf("minZ: %.3f\t maxZ: %.3f\r\n", ballPentagon->minZ, ballPentagon->maxZ);
-    checkRange(&ballPentagon->minZ, &ballPentagon->maxZ);
 }
 
 #endif
