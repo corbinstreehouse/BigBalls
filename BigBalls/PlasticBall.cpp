@@ -8,16 +8,17 @@
 #include "PlasticBall.h"
 #include "BigBalls.h"
 #include "HardwareSerial.h"
+#include "TinyGPS++.h"
 
 // Things specific to the plastic ball
 
 // These are defined in BigBalls.h, but probably should be hidden and only in this location
-#if 0 // corbin DEBUG
-    #define NUMBER_LEDS_PER_PENTAGON (2) // corbin testing!! so I can use a small strip
-    #define NUMBER_PENTAGONS_PER_CARDINAL_POINT 1 //// more corbin testing!
+#if 1 // corbin DEBUG
+    #define NUMBER_LEDS_PER_PENTAGON (1) // corbin testing!! so I can use a small strip
+//    #define NUMBER_PENTAGONS_PER_CARDINAL_POINT 1 //// more corbin testing!
 #else
     #define NUMBER_LEDS_PER_PENTAGON (8+6+8+6)
-    #define NUMBER_PENTAGONS_PER_CARDINAL_POINT 4 // four pentagons per cardinal point/direction
+//    #define NUMBER_PENTAGONS_PER_CARDINAL_POINT 4 // four pentagons per cardinal point/direction
 #endif
 
 #define PENTAGONS_PER_CIRCLE 8 // Among a 360 view of the ball we will encounter 8 pentagons.
@@ -29,6 +30,7 @@
 
 #define DEGREE_VARIATION_FOR_CARDINAL_POINT 10 // if we are within <value> degrees from a cardinal point, we will highlight all four pentagons. Otherwise, we higlight two (or maybe one)
 
+// TODO: remove..not needed anymore
 typedef CD_ENUM(int16_t, CDCardinalDirection) {
     CDCardinalDirectionNorth = 0,
     CDCardinalDirectionEast,
@@ -43,6 +45,9 @@ typedef struct {
     float minY, maxY;
     float minZ, maxZ;
     CRGB *groupStartLEDs; // Access the NUMBER_LEDS_PER_PENTAGON of LEDs for a pentagon
+#if DEBUG
+    int offset; // For debugging
+#endif
 } BallPentagon;
 
 static BallPentagon g_ballPentagons[PENTAGON_COUNT];
@@ -81,28 +86,7 @@ static void printBallCoordiante(BallCoordinate b) {
     Serial.printf("x: %.3f\ty: %.3f\t z:%.3f\r\n", b.x, b.y, b.z);
 }
 
-#endif
 
-/*
-static inline CRGB *wrapPointIfNeeded(CRGB *point) {
-    int amountPast = point - g_LEDsPastEnd;
-    if (amountPast >= 0) {
-        return &g_LEDs[amountPast];
-    } else {
-        return point;
-    }
-}
-
-static inline void highlightCardinalPoint(CRGB *pointStart) {
-    CRGB *ledGroup = pointStart;
-    for (int i = 0; i < NUMBER_PENTAGONS_PER_CARDINAL_POINT; i++) {
-        ledGroup = wrapPointIfNeeded(ledGroup);
-        for (int j = 0; j < NUMBER_LEDS_PER_PENTAGON; j++) {
-            *ledGroup = POINT_COLOR;
-            ledGroup++;
-        }
-    }
-}
 
 static CDCardinalDirection computeClosestCardinalDirectionFromDegrees(float degrees, float offsetDegrees) {
     while (degrees >= 360.0) {
@@ -134,6 +118,10 @@ static CDCardinalDirection computeClosestCardinalDirectionFromDegrees(float degr
     return cardinalDirection;
 }
 
+#endif
+
+
+/*
 static void highlightDirection(float degrees, CRGB *northStart) {
     // Fill all black...unless we have to walk everything then i can do it in the walk
     fill_solid(g_LEDs, NUM_LEDS, CRGB::Black);
@@ -181,6 +169,34 @@ static void printPentagon(BallPentagon *ballPentagon) {
 #endif
 
 
+static BallPentagon *findPentagonForCoordinate(BallCoordinate c) {
+    // Some sanity validations
+    if (abs(c.x) > 1.0 || abs(c.y) > 1.0 || abs(c.z) > 1.0) {
+#if DEBUG
+        Serial.printf("Out of bounds coordinate! -> ");
+        printBallCoordiante(c);
+#endif
+        g_patterns.flashThreeTimes(CRGB::Red);
+    }
+    for (int i = 0; i < PENTAGON_COUNT; i++) {
+        BallPentagon *pentagon = &g_ballPentagons[i];
+        if (c.x >= pentagon->minX && c.x <= pentagon->maxX &&
+            c.y >= pentagon->minY && c.y <= pentagon->maxY &&
+            c.z >= pentagon->minZ && c.z <= pentagon->maxZ) {
+            return pentagon; // Found it!
+        }
+    }
+#if DEBUG
+    // Shouldn't happen..
+    Serial.printf("Couldn't find a pentagon!?? programming error! -> ");
+    printBallCoordiante(c);
+    delay(5000);
+#endif
+    g_patterns.flashThreeTimes(CRGB::Red);
+    return NULL;
+}
+
+
 void initializeBall() {
     // Figure out the coordinate min/max points along the sphere for each pentagon. We'll highlight a pentagon if it is present in this area
     
@@ -193,6 +209,8 @@ void initializeBall() {
     // We fill up the ball pentagon array by incrementing this offset
     int ballOffset = 0;
 
+#define SMALL_OFFSET 0 // WE MIGHT need to make this a small number close to 0, like 0.001, in order to avoid rounding issues
+    
     // For the first "north group" of 4 pentagons we want the sharp corner to point dead north, since there are four cardinal points that we can easily make inside the "ball". So, instead of starting at 0, I'm going to back off the x one level
     {
         // So, walk around the sphere and assign cartisian coordinates to portions that will correspond to where the thing should light up a given pentagon. I could hardcode this more for speed.
@@ -217,22 +235,15 @@ void initializeBall() {
 
             // Fill in the top one and then the bottom one
             for (int i = 0; i < 2; i++) {
-                g_ballPentagons[ballOffset].minX = MIN(minX, maxX);
-                g_ballPentagons[ballOffset].maxX = MAX(minX, maxX);
-                g_ballPentagons[ballOffset].minY = MIN(minY, maxY);
-                g_ballPentagons[ballOffset].maxY = MAX(minY, maxY);
-                g_ballPentagons[ballOffset].minZ = minZ;
-                g_ballPentagons[ballOffset].maxZ = maxZ;
+                g_ballPentagons[ballOffset].minX = MIN(minX, maxX) - SMALL_OFFSET;
+                g_ballPentagons[ballOffset].maxX = MAX(minX, maxX) + SMALL_OFFSET;
+                g_ballPentagons[ballOffset].minY = MIN(minY, maxY) - SMALL_OFFSET;
+                g_ballPentagons[ballOffset].maxY = MAX(minY, maxY) + SMALL_OFFSET;
+                g_ballPentagons[ballOffset].minZ = minZ - SMALL_OFFSET;
+                g_ballPentagons[ballOffset].maxZ = maxZ + SMALL_OFFSET;
                 g_ballPentagons[ballOffset].groupStartLEDs = ledArrayOffset;
+                g_ballPentagons[ballOffset].offset = ballOffset;
 
-#if 0 // DEBUG
-                Serial.printf("Setup Pentagon %d\r\n", ballOffset);
-                printPentagon(&g_ballPentagons[ballOffset]);
-                Serial.println("------");
-                Serial.flush();
-                delay(10);
-#endif
-                
                 ledArrayOffset += NUMBER_LEDS_PER_PENTAGON;
                 ballOffset++;
 
@@ -276,13 +287,15 @@ void initializeBall() {
                 float maxX = sin(angle);
                 float maxY = cos(angle);
                 
-                g_ballPentagons[ballOffset].minX = MIN(minX, maxX);
-                g_ballPentagons[ballOffset].maxX = MAX(minX, maxX);
-                g_ballPentagons[ballOffset].minY = MIN(minY, maxY);
-                g_ballPentagons[ballOffset].maxY = MAX(minY, maxY);
-                g_ballPentagons[ballOffset].minZ = minZ;
-                g_ballPentagons[ballOffset].maxZ = maxZ;
+                g_ballPentagons[ballOffset].minX = MIN(minX, maxX) - SMALL_OFFSET;
+                g_ballPentagons[ballOffset].maxX = MAX(minX, maxX) + SMALL_OFFSET;
+                g_ballPentagons[ballOffset].minY = MIN(minY, maxY) - SMALL_OFFSET;
+                g_ballPentagons[ballOffset].maxY = MAX(minY, maxY) + SMALL_OFFSET;
+                g_ballPentagons[ballOffset].minZ = minZ - SMALL_OFFSET;
+                g_ballPentagons[ballOffset].maxZ = maxZ + SMALL_OFFSET;
+
                 g_ballPentagons[ballOffset].groupStartLEDs = ledArrayOffset;
+                g_ballPentagons[ballOffset].offset = ballOffset;
                 
                 ledArrayOffset += NUMBER_LEDS_PER_PENTAGON;
                 ballOffset++;
@@ -307,8 +320,6 @@ void initializeBall() {
         delay(100);
     }
     
-    Serial.println("-- Short wait to see results ----");
-    Serial.flush();
 
 #if 0
     Serial.println("North");
@@ -327,14 +338,28 @@ void initializeBall() {
     printBallCoordiante(ballCoordinateFromDegrees(270));
 #endif
     
-    delay(5000);
+    findPentagonForCoordinate(ballCoordinateFromDegrees(45)); // errors??
+    
+    Serial.println("-- Short wait to see results ----");
+    Serial.flush();
+
+//    delay(5000);
     
     
 #endif
 }
 
+void hilightPentagon(BallPentagon *pentagon) {
+    // Green direction pointing color??
+    fill_solid(pentagon->groupStartLEDs, NUMBER_LEDS_PER_PENTAGON, CRGB::Green);
+    
+#if DEBUG
+    Serial.printf("Highlight pentagon %d\r\n----------\r\n", pentagon->offset);
+#endif
+}
+
 // Called from BigBalls.cpp
-void doDirectionalPointWithOrientation(float targetDirectionInDegrees, imu::Quaternion orientation) {
+void doDirectionalPointWithOrientation(float targetDirectionInDegrees, imu::Quaternion orientationQuat) {
 
 #if  DEBUG
     imu::Vector<3> euler = g_bno.getVector(Adafruit_BNO055::VECTOR_EULER);
@@ -348,18 +373,28 @@ void doDirectionalPointWithOrientation(float targetDirectionInDegrees, imu::Quat
 //    Serial.printf("Euler.y: %.2f\r\n", euler.y());
 //    Serial.printf("Euler.z: %.2f\r\n", euler.z());
 //
-    Serial.printf("quaterion x: %.2f\r\n", (float)orientation.x());
-    Serial.printf("quaterion y: %.2f\r\n", (float)orientation.y());
-    Serial.printf("quaterion z: %.2f\r\n", (float)orientation.z());
-    Serial.printf("quaterion w: %.2f\r\n", (float)orientation.w());
+    Serial.printf("quaterion x: %.2f\r\n", (float)orientationQuat.x());
+    Serial.printf("quaterion y: %.2f\r\n", (float)orientationQuat.y());
+    Serial.printf("quaterion z: %.2f\r\n", (float)orientationQuat.z());
+    Serial.printf("quaterion w: %.2f\r\n", (float)orientationQuat.w());
+    
+#if DEBUG
+    Serial.printf("degrees %f -> ", targetDirectionInDegrees);
+    Serial.println(TinyGPSPlus::cardinal(targetDirectionInDegrees));
 
+#endif
+
+    
 #endif
     // Fill all black first
     fill_solid(g_LEDs, NUM_LEDS, CRGB::Black);
     
-    
-    
+    BallCoordinate coordinateForDirection = ballCoordinateFromDegrees(targetDirectionInDegrees);
 
+    // TODO: rotate based on orientationQuat....!
+    BallPentagon *pentagon = findPentagonForCoordinate(coordinateForDirection);
+    if (pentagon == NULL) return; // Avoid crashing in case something is wrong with the code
+    hilightPentagon(pentagon);
     
     // We have to show, as we aren't using the patterns library and just using FastLED
     FastLED.show();
