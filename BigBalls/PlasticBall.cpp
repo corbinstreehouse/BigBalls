@@ -41,32 +41,16 @@ typedef struct {
 
 static BallPentagon g_ballPentagons[PENTAGON_COUNT];
 
-typedef struct {
-    float x, y, z;
-} BallCoordinate;
-
-static BallCoordinate makeBallCoordinate(float x, float y, float z) {
-    BallCoordinate r;
-    r.x = x;
-    r.y = y;
-    r.z = z;
-    return r;
-}
-
 // Returns a coordinate in the x/y plane (z=0) for a particular degree
-static BallCoordinate ballCoordinateFromDegrees(float degrees) {
+static imu::Vector<3> ballCoordinateFromDegrees(float degrees) {
     float rad = radians(degrees);
-    BallCoordinate result;
-    result.z = 0;
-    result.x = sin(rad);
-    result.y = cos(rad);
-    return result;
+    return imu::Vector<3>(sin(rad), cos(rad), 0);
 }
 
 #if DEBUG
 
-static void printBallCoordiante(BallCoordinate b) {
-    Serial.printf("x: %.3f\ty: %.3f\t z:%.3f\r\n", b.x, b.y, b.z);
+static void printBallCoordiante(imu::Vector<3> b) {
+    Serial.printf("x: %.3f\ty: %.3f\t z:%.3f\r\n", b.x(), b.y(), b.z());
 }
 
 static void printPentagon(BallPentagon *ballPentagon) {
@@ -78,9 +62,9 @@ static void printPentagon(BallPentagon *ballPentagon) {
 #endif
 
 
-static BallPentagon *findPentagonForCoordinate(BallCoordinate c) {
+static BallPentagon *findPentagonForCoordinate(imu::Vector<3> c) {
     // Some sanity validations
-    if (abs(c.x) > 1.0 || abs(c.y) > 1.0 || abs(c.z) > 1.0) {
+    if (abs(c.x()) > 1.0 || abs(c.y()) > 1.0 || abs(c.z()) > 1.0) {
 #if DEBUG
         Serial.printf("Out of bounds coordinate! -> ");
         printBallCoordiante(c);
@@ -89,9 +73,9 @@ static BallPentagon *findPentagonForCoordinate(BallCoordinate c) {
     }
     for (int i = 0; i < PENTAGON_COUNT; i++) {
         BallPentagon *pentagon = &g_ballPentagons[i];
-        if (c.x >= pentagon->minX && c.x <= pentagon->maxX &&
-            c.y >= pentagon->minY && c.y <= pentagon->maxY &&
-            c.z >= pentagon->minZ && c.z <= pentagon->maxZ) {
+        if (c.x() >= pentagon->minX && c.x() <= pentagon->maxX &&
+            c.y() >= pentagon->minY && c.y() <= pentagon->maxY &&
+            c.z() >= pentagon->minZ && c.z() <= pentagon->maxZ) {
             return pentagon; // Found it!
         }
     }
@@ -303,7 +287,7 @@ void doDirectionalPointWithOrientation(float targetDirectionInDegrees, imu::Quat
     // Fill all black first
     fill_solid(g_LEDs, NUM_LEDS, CRGB::Black);
     
-    BallCoordinate coordinateForDirection = ballCoordinateFromDegrees(targetDirectionInDegrees);
+    imu::Vector<3> coordinateForDirection = ballCoordinateFromDegrees(targetDirectionInDegrees);
 
     // TODO: rotate based on orientationQuat....!
     BallPentagon *pentagon = findPentagonForCoordinate(coordinateForDirection);
