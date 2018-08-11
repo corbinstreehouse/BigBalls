@@ -18,7 +18,7 @@
 #define INITIAL_MOVE_DURATION (2*1000) // in ms. X seconds
 #define WAIT_TIME_BEFORE_GOING_TO_SLEEP (3*1000) // in ms. X seconds with no movement, and then go to sleep mode again (soft glow)
 
-#define ACCELEROMETER_DIFF_TO_CONSIDER_MOVED 0.5 // Smaller values make it more sensitive; larger values make it less sensitive
+#define ACCELEROMETER_DIFF_TO_CONSIDER_MOVED 0.3 // Smaller values make it more sensitive; larger values make it less sensitive
 
 #define FAKE_MOVE_EVENTS !BNO_ENABLED // Set to 1 to test fake moving
 #define FAKE_A_MOVE_TEST_DURATION (2*1000) // in ms. after X seconds pretend we moved (if FAKE_MOVE_EVENTS == 1)
@@ -92,9 +92,9 @@ static bool checkBallMoved() {
     
     // We'll check the accelerometer to see if the thing was hit/moved;
     imu::Vector<3> accel = g_bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
-    if ((accel.x() - g_lastAccelValue.x() >= ACCELEROMETER_DIFF_TO_CONSIDER_MOVED) ||
-        (accel.y() - g_lastAccelValue.y() >= ACCELEROMETER_DIFF_TO_CONSIDER_MOVED) ||
-        (accel.z() - g_lastAccelValue.z() >= ACCELEROMETER_DIFF_TO_CONSIDER_MOVED))
+    if ((fabs(accel.x() - g_lastAccelValue.x()) >= ACCELEROMETER_DIFF_TO_CONSIDER_MOVED) ||
+        (fabs(accel.y() - g_lastAccelValue.y()) >= ACCELEROMETER_DIFF_TO_CONSIDER_MOVED) ||
+        (fabs(accel.z() - g_lastAccelValue.z()) >= ACCELEROMETER_DIFF_TO_CONSIDER_MOVED))
     {
 #if DEBUG
 //        Serial.println("moved!");
