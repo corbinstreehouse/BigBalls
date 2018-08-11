@@ -105,6 +105,16 @@ static BallPentagon *findPentagonForCoordinate(BallCoordinate c) {
     return NULL;
 }
 
+static void hilightPentagon(BallPentagon *pentagon) {
+    // Green direction pointing color??
+    fill_solid(pentagon->groupStartLEDs, NUMBER_LEDS_PER_PENTAGON, CRGB::Green);
+    
+#if DEBUG
+    Serial.printf("Highlight pentagon offset: %d (sketchup model # %d)\r\n----------\r\n", pentagon->offset, pentagon->offset+1);
+#endif
+}
+
+
 
 void initializeBall() {
     // Figure out the coordinate min/max points along the sphere for each pentagon. We'll highlight a pentagon if it is present in this area
@@ -221,6 +231,7 @@ void initializeBall() {
         delay(10000);
     }
     
+#if 0 // prints pentagon offsets
     for (int i = 0; i < PENTAGON_COUNT; i++) {
         Serial.printf("Pentagon %d\r\n", i);
         printPentagon(&g_ballPentagons[i]);
@@ -228,7 +239,7 @@ void initializeBall() {
         Serial.flush();
         delay(100);
     }
-    
+#endif
 
 #if 0
     Serial.println("North");
@@ -247,23 +258,21 @@ void initializeBall() {
     printBallCoordiante(ballCoordinateFromDegrees(270));
 #endif
     
-    findPentagonForCoordinate(ballCoordinateFromDegrees(45)); // errors??
-    
+#if 0
+    // test finding the pentagons....
+    for (float i = 0; i < 360; i += 45) {
+        BallCoordinate b = ballCoordinateFromDegrees(i);
+        b.z = -.04;
+        BallPentagon *pentagon = findPentagonForCoordinate(b);
+        hilightPentagon(pentagon);
+    }
+#endif
     Serial.println("-- Short wait to see results ----");
     Serial.flush();
 
 //    delay(5000);
     
     
-#endif
-}
-
-void hilightPentagon(BallPentagon *pentagon) {
-    // Green direction pointing color??
-    fill_solid(pentagon->groupStartLEDs, NUMBER_LEDS_PER_PENTAGON, CRGB::Green);
-    
-#if DEBUG
-    Serial.printf("Highlight pentagon %d\r\n----------\r\n", pentagon->offset);
 #endif
 }
 
@@ -287,12 +296,8 @@ void doDirectionalPointWithOrientation(float targetDirectionInDegrees, imu::Quat
     Serial.printf("quaterion z: %.2f\r\n", (float)orientationQuat.z());
     Serial.printf("quaterion w: %.2f\r\n", (float)orientationQuat.w());
     
-#if DEBUG
     Serial.printf("degrees %f -> ", targetDirectionInDegrees);
     Serial.println(TinyGPSPlus::cardinal(targetDirectionInDegrees));
-
-#endif
-
     
 #endif
     // Fill all black first
