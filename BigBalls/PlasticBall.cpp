@@ -137,7 +137,7 @@ void initializeBall() {
             // 45 degree = pi/4
             // half of that is roughly the center...
             const float centerOffsetAngle = (PI/4.0)/2.0; // 22.5 degrees
-            float zOffsetAngle = z == 0 ? -centerOffsetAngle : centerOffsetAngle;
+            float zOffsetAngle = z == 0 ? centerOffsetAngle : -centerOffsetAngle; // -1 makes it clockwise
             float centerAngle = -1*angle + zOffsetAngle; // -1 makes it clockwise
             imu::Quaternion zAxisRotationQuat;
             imu::Vector<3> zAxisVector = imu::Vector<3>(0, 0, 1);
@@ -162,6 +162,7 @@ void initializeBall() {
                 g_ballPentagons[ballOffset].groupStartLEDs = ledArrayOffset;
 #if DEBUG
                 g_ballPentagons[ballOffset].offset = ballOffset;
+                Serial.printf("sketch: %d \t", ballOffset+1);
                 printPentagon(&g_ballPentagons[ballOffset]);
 #endif
                 ledArrayOffset += NUMBER_LEDS_PER_PENTAGON;
