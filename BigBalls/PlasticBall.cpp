@@ -13,7 +13,7 @@
 // Things specific to the plastic ball
 
 // These are defined in BigBalls.h, but probably should be hidden and only in this location
-#if 0 // 1 // corbin DEBUG
+#if 1 // corbin DEBUG
     #define NUMBER_LEDS_PER_PENTAGON (1) // corbin testing!! so I can use a small strip
 #else
     #define NUMBER_LEDS_PER_PENTAGON (8+6+8+6)
@@ -50,7 +50,7 @@ static imu::Vector<3> ballCoordinateFromDegrees(float degrees) {
 #if DEBUG
 
 static void printBallCoordiante(imu::Vector<3> b) {
-    Serial.printf("x: %.3f\ty: %.3f\t z:%.3f\r\n", b.x(), b.y(), b.z());
+    Serial.printf("x: %.3f\ty: %.3f\t z:%.3f mag:%.3f\r\n", b.x(), b.y(), b.z(), b.magnitude());
 }
 
 static void printPentagon(BallPentagon *ballPentagon) {
@@ -83,6 +83,7 @@ static BallPentagon *findPentagonForCoordinate(imu::Vector<3> c) {
     // Shouldn't happen..
     Serial.printf("Couldn't find a pentagon!?? programming error! -> ");
     printBallCoordiante(c);
+    
     delay(5000);
 #endif
     g_patterns.flashThreeTimes(CRGB::Red);
@@ -124,7 +125,7 @@ void initializeBall() {
         const float sinAngleStep = sin(angleStep);
 
         float minX = sin(startAngle);
-        float minY = sin(startAngle);
+        float minY = cos(startAngle);
         
         // This will only work for the pentagon layout...I could make it more abstract in the Z
         // First, handle all the pentagons touching the x/y plane
@@ -215,9 +216,9 @@ void initializeBall() {
         delay(10000);
     }
     
-#if 0 // prints pentagon offsets
+#if 1 // prints pentagon offsets
     for (int i = 0; i < PENTAGON_COUNT; i++) {
-        Serial.printf("Pentagon %d\r\n", i);
+        Serial.printf("Pentagon %d (sketchup model #%d)\r\n", i, i+1);
         printPentagon(&g_ballPentagons[i]);
         Serial.println("------");
         Serial.flush();
@@ -261,15 +262,15 @@ void initializeBall() {
 }
 
 // Called from BigBalls.cpp
-void doDirectionalPointWithOrientation(float targetDirectionInDegrees, imu::Quaternion orientationQuat) {
-
+void doDirectionalPointWithOrientation(float targetDirectionInDegrees) {
+    imu::Quaternion orientationQuat = g_bno.getQuat();
 #if  DEBUG
     imu::Vector<3> euler = g_bno.getVector(Adafruit_BNO055::VECTOR_EULER);
 
     /// HACK!! hardcode the degrees based on euler for now
-    targetDirectionInDegrees = euler.x();
+//    targetDirectionInDegrees = euler.x();
     
-    Serial.printf("TEST doDirectionalPointWithOrientation(.., %f)\r\n", targetDirectionInDegrees);
+    Serial.printf("TEST doDirectionalPointWithOrientation(%f)\r\n", targetDirectionInDegrees);
     
 //    Serial.printf("Euler.x: %.2f\r\n", euler.x());
 //    Serial.printf("Euler.y: %.2f\r\n", euler.y());
@@ -288,9 +289,10 @@ void doDirectionalPointWithOrientation(float targetDirectionInDegrees, imu::Quat
     fill_solid(g_LEDs, NUM_LEDS, CRGB::Black);
     
     imu::Vector<3> coordinateForDirection = ballCoordinateFromDegrees(targetDirectionInDegrees);
+    // Now rotate it
+    imu::Vector<3> rotatedVector = orientationQuat.rotateVector(coordinateForDirection);
 
-    // TODO: rotate based on orientationQuat....!
-    BallPentagon *pentagon = findPentagonForCoordinate(coordinateForDirection);
+    BallPentagon *pentagon = findPentagonForCoordinate(rotatedVector);
     if (pentagon == NULL) return; // Avoid crashing in case something is wrong with the code
     hilightPentagon(pentagon);
     

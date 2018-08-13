@@ -36,7 +36,7 @@ extern CRGB *g_LEDsPastEnd; // One past the end of the LED array; so I can wrap 
 // Ball specific things implemented in each file
 extern void initializeBall();
 
-extern void doDirectionalPointWithOrientation(float targetDirectionInDegrees, imu::Quaternion orientation);
+extern void doDirectionalPointWithOrientation(float targetDirectionInDegrees);
 
 
 #endif /* BigBalls_hpp */

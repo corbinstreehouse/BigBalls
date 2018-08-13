@@ -252,8 +252,7 @@ static void updateDirectionalPoint() {
                                             g_gps.location.lng(),
                                             g_towerLat,
                                             g_towerLong);
-    imu::Quaternion orientation = g_bno.getQuat();
-    doDirectionalPointWithOrientation(targetDirectionInDegrees, orientation);
+    doDirectionalPointWithOrientation(targetDirectionInDegrees);
 }
 
 void doBadDirection() {
