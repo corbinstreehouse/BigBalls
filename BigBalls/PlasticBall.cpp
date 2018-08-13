@@ -129,15 +129,14 @@ void initializeBall() {
 
     // Walk the ball along the x/y axis and assign a vector to the center of each pentagon.
     
-    // Each pentagon lies on about a 45 degree angle for the outer edge. Fake a center based on that.
-    // 45 degree = pi/4
-    // half of that is roughly the center...
-    const float centerOffsetAngle = (PI/4.0)/2.0; // 22.5 degrees
-    
     // For each cardinal point, assign values to each pentagon that is close to the cardinal directions
     for (float angle = 0; angle < 2*PI; angle = angle + PI/2.0) {
         for (int z = 0; z < 2; z++) {
             // Generate a quaterion to rotate along the z-axis; first do to the left of the angle, and then to the right.
+            // Each pentagon lies on about a 45 degree angle for the outer edge. Fake a center based on that.
+            // 45 degree = pi/4
+            // half of that is roughly the center...
+            const float centerOffsetAngle = (PI/4.0)/2.0; // 22.5 degrees
             float zOffsetAngle = z == 0 ? -centerOffsetAngle : centerOffsetAngle;
             float centerAngle = -1*angle + zOffsetAngle; // -1 makes it clockwise
             imu::Quaternion zAxisRotationQuat;
@@ -163,32 +162,54 @@ void initializeBall() {
                 g_ballPentagons[ballOffset].groupStartLEDs = ledArrayOffset;
 #if DEBUG
                 g_ballPentagons[ballOffset].offset = ballOffset;
+                printPentagon(&g_ballPentagons[ballOffset]);
 #endif
                 ledArrayOffset += NUMBER_LEDS_PER_PENTAGON;
                 ballOffset++;
 #if DEBUG
-                Serial.printf("angle %.3f - v: ", degrees(angle));
-                printVector(resultVector);
+//                Serial.printf("angle %.3f - v: ", degrees(angle));
+//                printVector(resultVector);
                 Serial.flush();
                 delay(100); /// not sure why this is needed to see results...
-
 #endif
             }
         }
     }
     
-    // Now do the top and bottom set of pentagons
-    
-    
-    
-    Serial.flush();
-    Serial.println("delay....");
-    for (int i = 0; i < 100000; i++) {
-        Serial.printf(".");
-        delay(10000);
+    // Now do the top and bottom set of pentagons; this is practically the same, but we just rotate among the x-axis further up (closer to z=1, but at the center point of the pentagons), and the offset along the z-axis by 45 degrees, which is where their center is located.
+    for (int x = 0; x < 2; x++) {
+        // The x-axis rotation rotates us up/down
+        imu::Quaternion xAxisRotationQuat;
+        imu::Vector<3> xAxisVector = imu::Vector<3>(1, 0, 0);
+        // Go "up" the first pass, and "down" the second
+        const float centerOffsetAngle = 3.0*PI/8.0; // 22.5 degrees from the TOP! (or bottom)
+        float xAxisAngle = x == 0 ? centerOffsetAngle : -centerOffsetAngle;
+        xAxisRotationQuat.fromAxisAngle(xAxisVector, xAxisAngle); // rotates us up or down by this amount
+
+        for (float angle = 0; angle < 2*PI; angle = angle + PI/2.0) {
+            // The center of this one is simple; it is 45 degrees (pi/4) from our offset "angle"
+            float centerAngle = -1*(angle + PI/4.0); // -1 makes it clockwise
+            imu::Quaternion zAxisRotationQuat;
+            imu::Vector<3> zAxisVector = imu::Vector<3>(0, 0, 1);
+            zAxisRotationQuat.fromAxisAngle(zAxisVector, centerAngle); // rotates us along the circle when viewed from above by this angle
+            // Start with a vector pointing north (y=1)
+            imu::Vector<3> northVector = imu::Vector<3>(0, 1, 0);
+            // Rotate the north vector by this quaterion alnog the x-axis
+            imu::Vector<3> firstVector = xAxisRotationQuat.rotateVector(northVector);
+            // Rotate the result along the z acox (along a circle when viewed from above)
+            imu::Vector<3> resultVector = zAxisRotationQuat.rotateVector(firstVector);
+            
+            g_ballPentagons[ballOffset].centerVector = resultVector;
+            g_ballPentagons[ballOffset].groupStartLEDs = ledArrayOffset;
+#if DEBUG
+            g_ballPentagons[ballOffset].offset = ballOffset;
+            printPentagon(&g_ballPentagons[ballOffset]);
+            delay(100); /// not sure why this is needed to see results...
+#endif
+            ledArrayOffset += NUMBER_LEDS_PER_PENTAGON;
+            ballOffset++;
+        }
     }
-    delay(10000000);
-      
    
 #if DEBUG
     if (ballOffset != PENTAGON_COUNT) {
@@ -223,15 +244,6 @@ void initializeBall() {
     printVector(ballCoordinateFromDegrees(270));
 #endif
     
-#if 0
-    // test finding the pentagons....
-    for (float i = 0; i < 360; i += 45) {
-        BallCoordinate b = ballCoordinateFromDegrees(i);
-        b.z = -.04;
-        BallPentagon *pentagon = findPentagonForCoordinate(b);
-        hilightPentagon(pentagon);
-    }
-#endif
     Serial.println("-- Short wait to see results ----");
     Serial.flush();
 
