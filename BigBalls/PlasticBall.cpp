@@ -30,9 +30,7 @@
 
 // min and max are a value between 0 to less than 360. It includes 0 and excludes 360.
 typedef struct {
-    float minX, maxX;
-    float minY, maxY;
-    float minZ, maxZ;
+    imu::Vector<3> centerVector;
     CRGB *groupStartLEDs; // Access the NUMBER_LEDS_PER_PENTAGON of LEDs for a pentagon
 #if DEBUG
     int offset; // For debugging
@@ -49,45 +47,61 @@ static imu::Vector<3> ballCoordinateFromDegrees(float degrees) {
 
 #if DEBUG
 
-static void printBallCoordiante(imu::Vector<3> b) {
+static void printVector(imu::Vector<3> b) {
     Serial.printf("x: %.3f\ty: %.3f\t z:%.3f mag:%.3f\r\n", b.x(), b.y(), b.z(), b.magnitude());
 }
 
 static void printPentagon(BallPentagon *ballPentagon) {
-    Serial.printf("minX: %.3f\t maxX: %.3f\r\n", ballPentagon->minX, ballPentagon->maxX);
-    Serial.printf("minY: %.3f\t maxY: %.3f\r\n", ballPentagon->minY, ballPentagon->maxY);
-    Serial.printf("minZ: %.3f\t maxZ: %.3f\r\n", ballPentagon->minZ, ballPentagon->maxZ);
+    printVector(ballPentagon->centerVector);
+}
+
+static void printQuat(const imu::Quaternion &quat) {
+    Serial.printf("x: %.3f, y: %.3.f z: %.3f, w: %.3f\r\n", (float)quat.x(), (float)quat.y(), (float)quat.z(), (float)quat.w());
 }
 
 #endif
 
+// Find the distance that the end points of the vectors have from each other
+static float distanceFromTwoPoints(imu::Vector<3> v1, imu::Vector<3> v2) {
+    float x2 = sq(v1.x() - v2.x());
+    float y2 = sq(v1.y() - v2.y());
+    float z2 = sq(v1.z() - v2.z());
+    return sq(x2 + y2 + z2);
+}
 
 static BallPentagon *findPentagonForCoordinate(imu::Vector<3> c) {
     // Some sanity validations
     if (abs(c.x()) > 1.0 || abs(c.y()) > 1.0 || abs(c.z()) > 1.0) {
 #if DEBUG
         Serial.printf("Out of bounds coordinate! -> ");
-        printBallCoordiante(c);
+        printVector(c);
 #endif
         g_patterns.flashThreeTimes(CRGB::Red);
     }
+    
+    BallPentagon *bestResult = NULL;
+    float bestDistance = HUGE_VALF; // large number
+    
     for (int i = 0; i < PENTAGON_COUNT; i++) {
         BallPentagon *pentagon = &g_ballPentagons[i];
-        if (c.x() >= pentagon->minX && c.x() <= pentagon->maxX &&
-            c.y() >= pentagon->minY && c.y() <= pentagon->maxY &&
-            c.z() >= pentagon->minZ && c.z() <= pentagon->maxZ) {
-            return pentagon; // Found it!
+        // How far is the center of the pentagon from the target location?
+        float distance = distanceFromTwoPoints(pentagon->centerVector, c);
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            bestResult = pentagon;
         }
     }
+    if (bestResult == NULL) {
 #if DEBUG
-    // Shouldn't happen..
-    Serial.printf("Couldn't find a pentagon!?? programming error! -> ");
-    printBallCoordiante(c);
-    
-    delay(5000);
-#endif
-    g_patterns.flashThreeTimes(CRGB::Red);
-    return NULL;
+        // Shouldn't happen..
+        Serial.printf("Couldn't find a pentagon!?? programming error! -> ");
+        printVector(c);
+        
+        delay(5000);
+    #endif
+        g_patterns.flashThreeTimes(CRGB::Red);
+    }
+    return bestResult;
 }
 
 static void hilightPentagon(BallPentagon *pentagon) {
@@ -113,103 +127,69 @@ void initializeBall() {
     // We fill up the ball pentagon array by incrementing this offset
     int ballOffset = 0;
 
-#define SMALL_OFFSET 0 // WE MIGHT need to make this a small number close to 0, like 0.001, in order to avoid rounding issues
+    // Walk the ball along the x/y axis and assign a vector to the center of each pentagon.
     
-    // For the first "north group" of 4 pentagons we want the sharp corner to point dead north, since there are four cardinal points that we can easily make inside the "ball". So, instead of starting at 0, I'm going to back off the x one level
-    {
-        // So, walk around the sphere and assign cartisian coordinates to portions that will correspond to where the thing should light up a given pentagon. I could hardcode this more for speed.
-        // We use a unit sphere for coordinates.
-        const float angleStep = 2*PI / PENTAGONS_PER_CIRCLE; // For 8 pentagons, this is pi/4 (or 45 degrees)
-        const float startAngle = -angleStep;
-        const float endAngle = TWO_PI - angleStep;
-        const float sinAngleStep = sin(angleStep);
+    // Each pentagon lies on about a 45 degree angle for the outer edge. Fake a center based on that.
+    // 45 degree = pi/4
+    // half of that is roughly the center...
+    const float centerOffsetAngle = (PI/4.0)/2.0; // 22.5 degrees
+    
+    // For each cardinal point, assign values to each pentagon that is close to the cardinal directions
+    for (float angle = 0; angle < 2*PI; angle = angle + PI/2.0) {
+        for (int z = 0; z < 2; z++) {
+            // Generate a quaterion to rotate along the z-axis; first do to the left of the angle, and then to the right.
+            float zOffsetAngle = z == 0 ? -centerOffsetAngle : centerOffsetAngle;
+            float centerAngle = -1*angle + zOffsetAngle; // -1 makes it clockwise
+            imu::Quaternion zAxisRotationQuat;
+            imu::Vector<3> zAxisVector = imu::Vector<3>(0, 0, 1);
+            zAxisRotationQuat.fromAxisAngle(zAxisVector, centerAngle); // rotates us along the circle when viewed from above by this angle
 
-        float minX = sin(startAngle);
-        float minY = cos(startAngle);
-        
-        // This will only work for the pentagon layout...I could make it more abstract in the Z
-        // First, handle all the pentagons touching the x/y plane
-        for (float angle = (startAngle + angleStep); angle <= endAngle; angle += angleStep) {
-            // Generate the x and y end point
-            float maxX = sin(angle);
-            float maxY = cos(angle);
+            for (int x = 0; x < 2; x++) {
+                // Generate a quaterion to rotate "centerOffsetAngle" along the x-axis
+                imu::Quaternion xAxisRotationQuat;
+                imu::Vector<3> xAxisVector = imu::Vector<3>(1, 0, 0);
+                // Go "up" the first pass, and "down" the second
+                float xAxisAngle = x == 0 ? centerOffsetAngle : -centerOffsetAngle;
+                xAxisRotationQuat.fromAxisAngle(xAxisVector, xAxisAngle); // rotates us up or down by this amount
+                
+                // Start with a vector pointing north (y=1)
+                imu::Vector<3> northVector = imu::Vector<3>(0, 1, 0);
+                // Rotate the north vector by this quaterion alnog the x-axis
+                imu::Vector<3> firstVector = xAxisRotationQuat.rotateVector(northVector);
+                // Rotate the result along the z acox (along a circle when viewed from above)
+                imu::Vector<3> resultVector = zAxisRotationQuat.rotateVector(firstVector);
 
-            float minZ = 0.0; // sin(0)
-            float maxZ = sinAngleStep;
-
-            // Fill in the top one and then the bottom one
-            for (int i = 0; i < 2; i++) {
-                g_ballPentagons[ballOffset].minX = MIN(minX, maxX) - SMALL_OFFSET;
-                g_ballPentagons[ballOffset].maxX = MAX(minX, maxX) + SMALL_OFFSET;
-                g_ballPentagons[ballOffset].minY = MIN(minY, maxY) - SMALL_OFFSET;
-                g_ballPentagons[ballOffset].maxY = MAX(minY, maxY) + SMALL_OFFSET;
-                g_ballPentagons[ballOffset].minZ = minZ - SMALL_OFFSET;
-                g_ballPentagons[ballOffset].maxZ = maxZ + SMALL_OFFSET;
+                g_ballPentagons[ballOffset].centerVector = resultVector;
                 g_ballPentagons[ballOffset].groupStartLEDs = ledArrayOffset;
+#if DEBUG
                 g_ballPentagons[ballOffset].offset = ballOffset;
-
+#endif
                 ledArrayOffset += NUMBER_LEDS_PER_PENTAGON;
                 ballOffset++;
+#if DEBUG
+                Serial.printf("angle %.3f - v: ", degrees(angle));
+                printVector(resultVector);
+                Serial.flush();
+                delay(100); /// not sure why this is needed to see results...
 
-                // Go the other way for the Z
-                float oldMinZ = minZ;
-                minZ = -maxZ;
-                maxZ = oldMinZ;
-            }
-            // Go to the next one along the x/y plane
-            minX = maxX;
-            minY = maxY;
-        }
-    }
-        
-    // The above handles all the pentagons that touch the x/y plane; now handle the top and bottom pentagon groups
-    // This is almost the same...and I could combine the loops, but the code would be harder to read
-    {
-        // The top/bottom pentagon group has four pentagons (PENTAGONS_PER_POLE)
-        const float angleStep = 2*PI / PENTAGONS_PER_POLE;
-        const float startAngle = -angleStep;
-        const float endAngle = TWO_PI - angleStep;
-        const float sinZStart = sin(2*PI / PENTAGONS_PER_CIRCLE);
-
-        for (int i = 0; i < 2; i++) {
-            float minX = sin(startAngle);
-            float minY = sin(startAngle);
-
-            float minZ, maxZ;
-            if (i == 0) {
-                minZ = sinZStart;
-                maxZ = 1.0; // cos(0)
-            } else {
-                minZ = -1.0; // cos(180)
-                maxZ = -sinZStart;
-            }
-
-            // The top/bottom groups of pentagons have four
-            static const float angleStep = 2*PI / PENTAGONS_PER_POLE; // For 4 pentagons, this is pi/2 (or 90 degrees)
-            for (float angle = (startAngle + angleStep); angle <= endAngle; angle += angleStep) {
-                // Generate the x and y end point
-                float maxX = sin(angle);
-                float maxY = cos(angle);
-                
-                g_ballPentagons[ballOffset].minX = MIN(minX, maxX) - SMALL_OFFSET;
-                g_ballPentagons[ballOffset].maxX = MAX(minX, maxX) + SMALL_OFFSET;
-                g_ballPentagons[ballOffset].minY = MIN(minY, maxY) - SMALL_OFFSET;
-                g_ballPentagons[ballOffset].maxY = MAX(minY, maxY) + SMALL_OFFSET;
-                g_ballPentagons[ballOffset].minZ = minZ - SMALL_OFFSET;
-                g_ballPentagons[ballOffset].maxZ = maxZ + SMALL_OFFSET;
-
-                g_ballPentagons[ballOffset].groupStartLEDs = ledArrayOffset;
-                g_ballPentagons[ballOffset].offset = ballOffset;
-                
-                ledArrayOffset += NUMBER_LEDS_PER_PENTAGON;
-                ballOffset++;
-                
-                minX = maxX;
-                minY = maxY;
+#endif
             }
         }
     }
     
+    // Now do the top and bottom set of pentagons
+    
+    
+    
+    Serial.flush();
+    Serial.println("delay....");
+    for (int i = 0; i < 100000; i++) {
+        Serial.printf(".");
+        delay(10000);
+    }
+    delay(10000000);
+      
+   
 #if DEBUG
     if (ballOffset != PENTAGON_COUNT) {
         Serial.printf("ERROR ball count!!!, got %d, expected %d\r\n", ballOffset, PENTAGON_COUNT);
@@ -228,19 +208,19 @@ void initializeBall() {
 
 #if 0
     Serial.println("North");
-    printBallCoordiante(ballCoordinateFromDegrees(0));
+    printVector(ballCoordinateFromDegrees(0));
 
     Serial.println("NE");
-    printBallCoordiante(ballCoordinateFromDegrees(45));
+    printVector(ballCoordinateFromDegrees(45));
 
     Serial.println("East");
-    printBallCoordiante(ballCoordinateFromDegrees(90));
+    printVector(ballCoordinateFromDegrees(90));
 
     Serial.println("South");
-    printBallCoordiante(ballCoordinateFromDegrees(180));
+    printVector(ballCoordinateFromDegrees(180));
 
     Serial.println("West");
-    printBallCoordiante(ballCoordinateFromDegrees(270));
+    printVector(ballCoordinateFromDegrees(270));
 #endif
     
 #if 0
@@ -276,10 +256,7 @@ void doDirectionalPointWithOrientation(float targetDirectionInDegrees) {
 //    Serial.printf("Euler.y: %.2f\r\n", euler.y());
 //    Serial.printf("Euler.z: %.2f\r\n", euler.z());
 //
-    Serial.printf("quaterion x: %.2f\r\n", (float)orientationQuat.x());
-    Serial.printf("quaterion y: %.2f\r\n", (float)orientationQuat.y());
-    Serial.printf("quaterion z: %.2f\r\n", (float)orientationQuat.z());
-    Serial.printf("quaterion w: %.2f\r\n", (float)orientationQuat.w());
+    printQuat(orientationQuat);
     
     Serial.printf("degrees %f -> ", targetDirectionInDegrees);
     Serial.println(TinyGPSPlus::cardinal(targetDirectionInDegrees));
