@@ -276,31 +276,40 @@ void doDirectionalPointWithOrientation(float targetDirectionInDegrees) {
 #endif
     // Fill all black first
     fill_solid(g_LEDs, NUM_LEDS, CRGB::Black);
+
+    // Take the z axis and unrotate it by the amount that the BNO has been rotated. This will get it pointing up.
+    imu::Vector<3> zAxisVector = imu::Vector<3>(0, 0, 1);
+    imu::Quaternion reverseRotationQuat = orientationQuat.conjugate();
+    zAxisVector = reverseRotationQuat.rotateVector(zAxisVector);
+    // This should always point up on the ball, regardless of its orientation. We use that as our new z-axis, and rotate
+    
+    
+    
+
     
     // hack
-    targetDirectionInDegrees = 0; // for testing go north
+   // targetDirectionInDegrees = 0; // for testing go north
 //    orientationQuat = imu::Quaternion();
 //    imu::Vector<3> xAxisVector = imu::Vector<3>(1, 0, 0);
-//    imu::Vector<3> zAxisVector = imu::Vector<3>(0, 0, 1);
 //    imu::Quaternion zAxisRotationQuat;
 //    zAxisRotationQuat.fromAxisAngle(zAxisVector, -(PI/2+PI/8)); // rotates us along the circle when viewed
 //    orientationQuat.fromAxisAngle(xAxisVector, (PI/2 - PI/8));
     // end hack
     
-    imu::Vector<3> coordinateForDirection = vectorFromDegrees(targetDirectionInDegrees);
-    // Now rotate it
-    imu::Vector<3> rotatedVector = orientationQuat.rotateVector(coordinateForDirection);
+//    imu::Vector<3> coordinateForDirection = vectorFromDegrees(targetDirectionInDegrees);
+//    // Now rotate it
+//    imu::Vector<3> rotatedVector = orientationQuat.rotateVector(coordinateForDirection);
+//
+////    rotatedVector = zAxisRotationQuat.rotateVector(rotatedVector);
+//
+//    printQuat(orientationQuat);
+//    imu::Vector<3> euler = g_bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+//    Serial.printf("Euler x:%.2f y:%.2f z:%.2f\r\n", euler.x(), euler.y(), euler.z());
+//    euler = orientationQuat.toEuler();
+//    Serial.printf("Euler2 x:%.2f y:%.2f z:%.2f\r\n", euler.x(), euler.y(), euler.z());
 
-//    rotatedVector = zAxisRotationQuat.rotateVector(rotatedVector);
-    
-    printQuat(orientationQuat);
-    imu::Vector<3> euler = g_bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    Serial.printf("Euler x:%.2f y:%.2f z:%.2f\r\n", euler.x(), euler.y(), euler.z());
-    euler = orientationQuat.toEuler();
-    Serial.printf("Euler2 x:%.2f y:%.2f z:%.2f\r\n", euler.x(), euler.y(), euler.z());
 
-
-    BallPentagon *pentagon = findPentagonForVector(rotatedVector);
+    BallPentagon *pentagon = findPentagonForVector(zAxisVector);
     if (pentagon == NULL) return; // Avoid crashing in case something is wrong with the code
     hilightPentagon(pentagon);
     
