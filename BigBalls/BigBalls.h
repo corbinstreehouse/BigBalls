@@ -19,8 +19,8 @@
 #define LED_PIN 15 // corbin, using 11 for testing
 
 // Based on Dylan's breakpoint diagram
-#define GPS_RX_PIN 9
-#define GPS_TX_PIN 10
+#define GPS_RX_PIN 7
+#define GPS_TX_PIN 8
 #define GPS_SERIAL_BAUD 4800
 
 #define BRIGHTNESS  64
