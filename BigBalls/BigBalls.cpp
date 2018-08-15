@@ -10,6 +10,7 @@
 #include "TinyGPS++.h"
 #include "LEDPatternType.h" // Defines CD_ENUM
 #include "EEPROM.h"
+#include "SoftwareSerial.h"
 
 ///////////////// PARAMETERS YOU CAN TWEAK
 #define WAIT_FADE_DURATION (5*1000) // Duration the fade takes when in the wiating state, in ms (5 seconds)
@@ -29,6 +30,7 @@
 const double g_towerLat = 40.783979;
 const double g_towerLong = -119.214196;
 
+// If this is set; it will feed an initial GPS position for testing.
 #define TEST_GPS 1
 
 ///////////
@@ -39,7 +41,7 @@ CRGB *g_LEDs;
 CRGB *g_LEDsPastEnd;
 Adafruit_BNO055 g_bno = Adafruit_BNO055();
 TinyGPSPlus g_gps;
-//AltSoftSerial g_gpsSerial; // TODO: GPS serial input!
+SoftwareSerial g_gpsSoftwareSerial(GPS_RX_PIN, GPS_TX_PIN);
 
 static uint32_t g_lastTimeInMS = 0; // in milliseconds
 
@@ -300,6 +302,31 @@ int checksum(const char *s) {
     return c;
 }
 
+static void initializeGPS() {
+    g_gpsSoftwareSerial.begin(GPS_SERIAL_BAUD);
+#if TEST_GPS
+    // Don't even bother reading this.
+    // GPS test coordinates: 37.1221962,-122.0067858
+    char *testGPSCoordinate = "GPRMC,162614,A,3707.37916,N,12200.44676,W,10.0,90.0,131006,1.2,E,A";
+    g_gps.encode('$');
+    char *c = testGPSCoordinate;
+    while (*c) {
+        //  Serial.print(*c);
+        g_gps.encode(*c);
+        c++;
+    }
+    g_gps.encode('*');
+    char tmp[6];
+    sprintf(tmp, "%02X\r\n", checksum(testGPSCoordinate));
+    c = tmp;
+    while (*c) {
+        //  Serial.print(*c);
+        g_gps.encode(*c);
+        c++;
+    }
+    
+#endif
+}
 
 void setup() {
 #if DEBUG
@@ -321,31 +348,8 @@ void setup() {
     //    FastLED.setMaxPowerInVoltsAndMilliamps(5.0, 18000);
     
     initializeBall();
-    
     intializeBNO();
-    
-#if TEST_GPS
-    // Don't even bother reading this.
-    // GPS test coordinates: 37.1221962,-122.0067858
-    char *testGPSCoordinate = "GPRMC,162614,A,3707.37916,N,12200.44676,W,10.0,90.0,131006,1.2,E,A";
-    g_gps.encode('$');
-    char *c = testGPSCoordinate;
-    while (*c) {
-      //  Serial.print(*c);
-        g_gps.encode(*c);
-        c++;
-    }
-    g_gps.encode('*');
-    char tmp[6];
-    sprintf(tmp, "%02X\r\n", checksum(testGPSCoordinate));
-    c = tmp;
-    while (*c) {
-      //  Serial.print(*c);
-        g_gps.encode(*c);
-        c++;
-    }
-    
-#endif
+    initializeGPS();
     
     gotoWaitingState();
 }
@@ -392,12 +396,15 @@ static void updateDirectionalPoint() {
     sensors_event_t event;
     g_bno.getEvent(&event);
 
-    // Figure out the target direction to the tower, based on our current GPS location and the tower's lat/long
-    double targetDirectionInDegrees = TinyGPSPlus::courseTo(g_gps.location.lat(),
-                                            g_gps.location.lng(),
-                                            g_towerLat,
-                                            g_towerLong);
-    doDirectionalPointWithOrientation(targetDirectionInDegrees);
+    TinyGPSLocation location = g_gps.location;
+    if (location.isValid()) {
+        // Figure out the target direction to the tower, based on our current GPS location and the tower's lat/long
+        double targetDirectionInDegrees = TinyGPSPlus::courseTo(g_gps.location.lat(),
+                                                g_gps.location.lng(),
+                                                g_towerLat,
+                                                g_towerLong);
+        doDirectionalPointWithOrientation(targetDirectionInDegrees);
+    }
 }
 
 void doBadDirection() {
@@ -484,12 +491,9 @@ static void doInitialMovePattern() {
 }
 
 static void updateGPSPosition() {
-    // TODO: feed gps the serial input from whatever provides that.
-    // Something like:
-//    while (g_gpsSerial.available() > 0) {
-//        g_gps.encode(g_gpsSerial.read());
-//    }
-    
+    while (g_gpsSoftwareSerial.available() > 0) {
+        g_gps.encode(g_gpsSoftwareSerial.read());
+    }
 #if DEBUG
     if (g_gps.location.isUpdated()) {
         double distanceKm = TinyGPSPlus::distanceBetween(

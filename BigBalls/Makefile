@@ -38,7 +38,7 @@
 
 # List Arduino libraries here
 #
-APP_LIBS_LIST = SPI Wire Wire/utility EEPROM
+APP_LIBS_LIST = SPI Wire Wire/utility EEPROM SoftwareSerial
 
 # List users libraries here -- edit this list for what i'm using in my user libs...
 #Adafruit_DotStar
