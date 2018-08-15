@@ -138,8 +138,22 @@ void initializeBall() {
                 // Generate a quaterion to rotate "centerOffsetAngle" along the x-axis
                 imu::Quaternion xAxisRotationQuat;
                 imu::Vector<3> xAxisVector = imu::Vector<3>(1, 0, 0);
-                // Go "up" the first pass, and "down" the second
-                float xAxisAngle = x == 0 ? centerOffsetAngle : -centerOffsetAngle;
+                // The new ball layout from M&M is "up, down, down, up";
+                float xAxisAngle;
+                if (x == 0) {
+                    if (z == 0) {
+                        xAxisAngle = centerOffsetAngle;
+                    } else {
+                        xAxisAngle = -centerOffsetAngle;
+                    }
+                } else {
+                    if (z == 0) {
+                        xAxisAngle = -centerOffsetAngle;
+                    } else {
+                        zAxisVector = centerOffsetAngle;
+                    }
+                }
+                
                 xAxisRotationQuat.fromAxisAngle(xAxisVector, xAxisAngle); // rotates us up or down by this amount
                 
                 // Start with a vector pointing north (y=1)
