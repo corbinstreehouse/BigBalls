@@ -16,7 +16,7 @@
 #define NUMBER_LEDS_PER_GROUP (8+6+8+6) // The pattern Mayra told me
 #define NUM_LEDS (NUMBER_LEDS_PER_GROUP*NUMBER_GROUPS)
 
-#define LED_PIN 11 // corbin, using 11 for testing
+#define LED_PIN 15 // corbin, using 11 for testing 
 #define BRIGHTNESS  64
 #define LED_TYPE    WS2812
 #define COLOR_ORDER GRB
