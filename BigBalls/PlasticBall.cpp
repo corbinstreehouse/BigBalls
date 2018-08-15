@@ -16,7 +16,7 @@
 #if 0 // corbin DEBUG
     #define NUMBER_LEDS_PER_PENTAGON (1) // corbin testing!! so I can use a small strip
 #else
-    #define NUMBER_LEDS_PER_PENTAGON (8+6+8+6)
+    #define NUMBER_LEDS_PER_PENTAGON (6+8+6+8)
 #endif
 
 #define PENTAGONS_PER_CIRCLE 8 // Among a 360 view of the ball we will encounter 8 pentagons.
