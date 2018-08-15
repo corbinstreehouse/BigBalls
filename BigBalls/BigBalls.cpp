@@ -360,6 +360,7 @@ static void doWaiting() {
         CRGB color;
         hsv2rgb_rainbow(hsv, color);
         g_patterns.setPatternColor(color);
+        g_lastTimeInMS = millis();
     }
     g_patterns.show();
 }
