@@ -13,7 +13,7 @@
 // Things specific to the plastic ball
 
 // These are defined in BigBalls.h, but probably should be hidden and only in this location
-#if 1 // corbin DEBUG
+#if 0 // corbin DEBUG
     #define NUMBER_LEDS_PER_PENTAGON (1) // corbin testing!! so I can use a small strip
 #else
     #define NUMBER_LEDS_PER_PENTAGON (8+6+8+6)
@@ -284,8 +284,6 @@ void doDirectionalPointWithOrientation(float targetDirectionInDegrees) {
     // This should always point up on the ball, regardless of its orientation. We use that as our new z-axis, and rotate
     
     
-    
-
     
     // hack
    // targetDirectionInDegrees = 0; // for testing go north
