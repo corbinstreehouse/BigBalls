@@ -9,6 +9,7 @@
 #include "FastLED.h"
 #include "TinyGPS++.h"
 #include "LEDPatternType.h" // Defines CD_ENUM
+#include "EEPROM.h"
 
 ///////////////// PARAMETERS YOU CAN TWEAK
 #define WAIT_FADE_DURATION (5*1000) // Duration the fade takes when in the wiating state, in ms (5 seconds)
@@ -20,8 +21,10 @@
 
 #define ACCELEROMETER_DIFF_TO_CONSIDER_MOVED 0.3 // Smaller values make it more sensitive; larger values make it less sensitive
 
-#define FAKE_MOVE_EVENTS !BNO_ENABLED // Set to 1 to test fake moving
-#define FAKE_A_MOVE_TEST_DURATION (2*1000) // in ms. after X seconds pretend we moved (if FAKE_MOVE_EVENTS == 1)
+#define BNO_SENSORID_EEPROM_ADDRESS 0
+#define BNO_CALIBRATION_EEPROM_ADDRESS (BNO_SENSORID_EEPROM_ADDRESS + sizeof(long))
+
+#define ALWAYS_CALIBRATE_ON_START 1 // If 0, it only calibrates if we didn't save and restore calibration data
 
 const double g_towerLat = 40.783979;
 const double g_towerLong = -119.214196;
@@ -72,24 +75,6 @@ static void printVector(imu::Vector<3> accel) {
 
 static bool checkBallMoved() {
     bool result = false;
-#if FAKE_MOVE_EVENTS
-    if (g_movedTestTime == 0) {
-        g_movedTestTime = millis(); // initialize for debugging
-    }
-    if (g_ballState == CDBallStateWaiting) {
-        if ((millis() - g_movedTestTime) > FAKE_A_MOVE_TEST_DURATION) {
-            Serial.printf("DEBUG!! Faking a move after %f seconds.\r\n", FAKE_A_MOVE_TEST_DURATION/1000.0);
-            result = true;
-        }
-    }
-#endif
-    
-#if BNO_ENABLED
-    
-// Uncomment to debug the values
-//    imu::Vector<3> accel = g_bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
-//    printVector(accel);
-    
     // We'll check the accelerometer to see if the thing was hit/moved;
     imu::Vector<3> accel = g_bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     if ((fabs(accel.x() - g_lastAccelValue.x()) >= ACCELEROMETER_DIFF_TO_CONSIDER_MOVED) ||
@@ -109,7 +94,6 @@ static bool checkBallMoved() {
         g_lastAccelValue = accel;
         result = true;
     }
-#endif
     
     return result;
 }
@@ -126,18 +110,185 @@ static bool hasNotMovedInWhile() {
     return false;
 }
 
+#if DEBUG
+void displaySensorOffsets(const adafruit_bno055_offsets_t &calibData)
+{
+    Serial.print("Accelerometer: ");
+    Serial.print(calibData.accel_offset_x); Serial.print(" ");
+    Serial.print(calibData.accel_offset_y); Serial.print(" ");
+    Serial.print(calibData.accel_offset_z); Serial.print(" ");
+    
+    Serial.print("\nGyro: ");
+    Serial.print(calibData.gyro_offset_x); Serial.print(" ");
+    Serial.print(calibData.gyro_offset_y); Serial.print(" ");
+    Serial.print(calibData.gyro_offset_z); Serial.print(" ");
+    
+    Serial.print("\nMag: ");
+    Serial.print(calibData.mag_offset_x); Serial.print(" ");
+    Serial.print(calibData.mag_offset_y); Serial.print(" ");
+    Serial.print(calibData.mag_offset_z); Serial.print(" ");
+    
+    Serial.print("\nAccel Radius: ");
+    Serial.print(calibData.accel_radius);
+    
+    Serial.print("\nMag Radius: ");
+    Serial.print(calibData.mag_radius);
+}
+
+void displayCalStatus(void)
+{
+    /* Get the four calibration values (0..3) */
+    /* Any sensor data reporting 0 should be ignored, */
+    /* 3 means 'fully calibrated" */
+    uint8_t system, gyro, accel, mag;
+    system = gyro = accel = mag = 0;
+    g_bno.getCalibration(&system, &gyro, &accel, &mag);
+    
+    /* The data should be ignored until the system calibration is > 0 */
+    Serial.print("\t");
+    if (!system)
+    {
+        Serial.print("! ");
+    }
+    
+    /* Display the individual values */
+    Serial.print("Sys:");
+    Serial.print(system, DEC);
+    Serial.print(" G:");
+    Serial.print(gyro, DEC);
+    Serial.print(" A:");
+    Serial.print(accel, DEC);
+    Serial.print(" M:");
+    Serial.print(mag, DEC);
+}
+
+void displaySensorStatus(void)
+{
+    /* Get the system status values (mostly for debugging purposes) */
+    uint8_t system_status, self_test_results, system_error;
+    system_status = self_test_results = system_error = 0;
+    g_bno.getSystemStatus(&system_status, &self_test_results, &system_error);
+    
+    /* Display the results in the Serial Monitor */
+    Serial.println("");
+    Serial.print("System Status: 0x");
+    Serial.println(system_status, HEX);
+    Serial.print("Self Test:     0x");
+    Serial.println(self_test_results, HEX);
+    Serial.print("System Error:  0x");
+    Serial.println(system_error, HEX);
+    Serial.println("");
+    delay(500);
+}
+#endif
+
+// return true if calibration is stored in EEPROM, else false
+static bool loadBNOCalibration() {
+    /*
+     *  Look for the sensor's unique ID at the beginning oF EEPROM.
+     *  This isn't foolproof, but it's better than nothing.
+     */
+    long bnoID;
+    EEPROM.get(BNO_SENSORID_EEPROM_ADDRESS, bnoID);
+
+    sensor_t sensor;
+    g_bno.getSensor(&sensor);
+    bool result = bnoID == sensor.sensor_id;
+    if (result) {
+        adafruit_bno055_offsets_t calibrationData;
+        EEPROM.get(BNO_CALIBRATION_EEPROM_ADDRESS, calibrationData);
+        g_bno.setSensorOffsets(calibrationData);
+#if DEBUG
+        Serial.println("\nFound Calibration for this sensor in EEPROM.");
+        displaySensorOffsets(calibrationData);
+        Serial.println("\n\nRestoring Calibration data to the BNO055...");
+        Serial.println("\n\nCalibration data loaded into BNO055");
+#endif
+    }
+}
+
+#define BNO055_SAMPLERATE_DELAY_MS (100)
+
+static bool bnoIsCalibrated () {
+    // Not sure why, but the accel never calibrates for me, so ignore it..
+    
+    uint8_t system, gyro, accel, mag;
+    g_bno.getCalibration(&system, &gyro, &accel, &mag);
+    if (system < 3 || gyro < 3 || /*accel < 3 || */mag < 3)
+        return false;
+    return true;
+
+}
+
+static void calibrateBNO() {
+    // Flash the LEDs red when calibrating..
+    if (!bnoIsCalibrated()) {
+        g_patterns.setPatternDuration(500);
+        g_patterns.setPatternColor(CRGB::Pink);
+        g_patterns.setPatternType(LEDPatternTypeBlink);
+//        displaySensorStatus();
+    }
+    
+    while (!bnoIsCalibrated())
+    {
+        sensors_event_t event;
+        g_bno.getEvent(&event);
+#if DEBUG
+        Serial.print(" X: ");
+        Serial.print(event.orientation.x, 4);
+        Serial.print("\tY: ");
+        Serial.print(event.orientation.y, 4);
+        Serial.print("\tZ: ");
+        Serial.print(event.orientation.z, 4);
+        Serial.println();
+        displayCalStatus();
+#endif
+        /* Wait the specified delay before requesting new data */
+        delay(BNO055_SAMPLERATE_DELAY_MS);
+        g_patterns.show();
+    }
+}
+
+static void saveBNOCalibration() {
+    adafruit_bno055_offsets_t newCalib;
+    g_bno.getSensorOffsets(newCalib);
+#if DEBUG
+    displaySensorOffsets(newCalib);
+#endif
+    sensor_t sensor;
+    g_bno.getSensor(&sensor);
+    long bnoID = sensor.sensor_id;
+    
+    EEPROM.put(BNO_SENSORID_EEPROM_ADDRESS, bnoID);
+    const int calibrationDataAddress = BNO_SENSORID_EEPROM_ADDRESS + sizeof(long); // past the sensorID address
+    EEPROM.put(BNO_CALIBRATION_EEPROM_ADDRESS, newCalib);
+}
+
 static void intializeBNO() {
-#if BNO_ENABLED
-    if (!g_bno.begin()) {
+    if (g_bno.begin()) {
+        bool isCalibrated = loadBNOCalibration();
+        
+        delay(500); // It is slow to initialize ; wait half a second
+
+        // Crystal must be configured AFTER loading calibration data into BNO055.
+        g_bno.setExtCrystalUse(true); // corbin: why do we do this?
+
+        g_lastAccelValue = g_bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+        
+        // Always test calibration on setup? Not sure if we have to..
+        if (ALWAYS_CALIBRATE_ON_START || !isCalibrated) {
+            calibrateBNO(); // thing never seems to calibrate!
+            // After calibrated...store the data in EEPROM
+            saveBNOCalibration();
+        }
+        
+    } else {
+        g_patterns.flashThreeTimes(CRGB::Purple); // Flash purple for no BNO
 #if DEBUG
         Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+        delay(1000);
 #endif
-    } else {
-        g_bno.setExtCrystalUse(true);
-        delay(500); // It is slow to initialize ; wait half a second
-        g_lastAccelValue = g_bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     }
-#endif
 }
 
 int checksum(const char *s) {
@@ -172,10 +323,6 @@ void setup() {
     initializeBall();
     
     intializeBNO();
-    
-#if FAKE_MOVE_EVENTS
-    g_movedTestTime = millis();
-#endif
     
 #if TEST_GPS
     // Don't even bother reading this.
@@ -231,9 +378,6 @@ static void gotoDirectionalPointState() {
     Serial.println("--- gotoDirectionalPointState");
 #endif
     
-#if FAKE_MOVE_EVENTS
-    g_movedTestTime = millis(); // reset for debugging
-#endif
     g_ballState = CDBallStateDirectionalPoint;
     
     // Clear the LEDs and set our pattern to be "nothing" so we can manually update individual ones with FastLED
@@ -264,9 +408,6 @@ void doBadDirection() {
 static void gotoWaitingState() {
 #if DEBUG
     Serial.println("------- gotoWaitingState");
-#endif
-#if FAKE_MOVE_EVENTS
-    g_movedTestTime = millis();
 #endif
     g_ballState = CDBallStateWaiting;
 
@@ -341,61 +482,6 @@ static void doInitialMovePattern() {
     }
 }
 
-#if DEBUG
-
-void print_bno() {
-    sensors_event_t event;
-    g_bno.getEvent(&event);
-    
-    // Possible vector values can be:
-    // - VECTOR_ACCELEROMETER - m/s^2
-    // - VECTOR_MAGNETOMETER  - uT
-    // - VECTOR_GYROSCOPE     - rad/s
-    // - VECTOR_EULER         - degrees
-    // - VECTOR_LINEARACCEL   - m/s^2
-    // - VECTOR_GRAVITY       - m/s^2
-    
-    /* The processing sketch expects data as roll, pitch, heading */
-    Serial.printf("Orientation.x: %f\r\n", (float)event.orientation.x);
-    Serial.printf("Orientation.y: %f\r\n", (float)event.orientation.y);
-    Serial.printf("Orientation.z: %f\r\n", (float)event.orientation.z);
-    
-    imu::Vector<3> euler = g_bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    Serial.printf("Euler.x: %f\r\n", euler.x());
-    Serial.printf("Euler.y: %f\r\n", euler.y());
-    Serial.printf("Euler.z: %f\r\n", euler.z());
-    
-    imu::Quaternion quaterion = g_bno.getQuat();
-    Serial.printf("quaterion: %f\r\n", (float)quaterion.x());
-    Serial.printf("quaterion: %f\r\n", (float)quaterion.y());
-    Serial.printf("quaterion: %f\r\n", (float)quaterion.z());
-
-    Serial.println();
-    
-//    /* Also send calibration data for each sensor. */
-//    uint8_t sys, gyro, accel, mag = 0;
-//    g_bno.getCalibration(&sys, &gyro, &accel, &mag);
-//    Serial.print(F("Calibration: "));
-//    Serial.print(sys, DEC);
-//    Serial.print(F(" "));
-//    Serial.print(gyro, DEC);
-//    Serial.print(F(" "));
-//    Serial.print(accel, DEC);
-//    Serial.print(F(" "));
-//    Serial.println(mag, DEC);
-}
-
-static void doBNOTest() {
-//    print_bno();
-
-
-}
-
-static uint32_t g_lastBNOTestTime = 0;
-
-#endif
-
-
 static void updateGPSPosition() {
     // TODO: feed gps the serial input from whatever provides that.
     // Something like:
@@ -426,14 +512,7 @@ static void updateGPSPosition() {
 #endif
 }
 
-void loop() {
-#if  DEBUG // BNO test...
-    if (millis() - g_lastBNOTestTime >= 100) {
-        doBNOTest();
-        g_lastBNOTestTime = millis();
-    }
-#endif
-    
+void loop() {    
     updateGPSPosition();
     
     switch (g_ballState) {

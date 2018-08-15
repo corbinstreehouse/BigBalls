@@ -23,12 +23,8 @@
 
 #define DEBUG 1
 
-#define BNO_ENABLED 1 //  TURN off if you don't have it hooked up yet
-
-
 extern LEDPatterns g_patterns;
 extern Adafruit_BNO055 g_bno;
-
 
 extern CRGB *g_LEDs;
 extern CRGB *g_LEDsPastEnd; // One past the end of the LED array; so I can wrap to the start when re-mapping
