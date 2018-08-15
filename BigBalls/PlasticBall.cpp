@@ -23,10 +23,10 @@
 #define PENTAGONS_PER_POLE 4 // Among a top/bottom polar view there are 4 pentagons
 #define PENTAGON_COUNT 24
 
-#define POINT_COLOR CRGB::Green
+#define POINT_COLOR CRGB::Green // The color we use when pointing on a pentagon
 
-
-#define DEGREE_VARIATION_FOR_CARDINAL_POINT 10 // if we are within <value> degrees from a cardinal point, we will highlight all four pentagons. Otherwise, we higlight two (or maybe one)
+// If this is 1, we will do a test on the start and highlight each pentagon in order so you can verify it
+#define HIGHLIGHT_PENTAGONS_ON_START 1
 
 // min and max are a value between 0 to less than 360. It includes 0 and excludes 360.
 typedef struct {
@@ -103,8 +103,35 @@ static BallPentagon *findPentagonForVector(imu::Vector<3> c) {
 
 static void hilightPentagon(BallPentagon *pentagon) {
     // Green direction pointing color??
-    fill_solid(pentagon->groupStartLEDs, NUMBER_LEDS_PER_PENTAGON, CRGB::Green);
+    fill_solid(pentagon->groupStartLEDs, NUMBER_LEDS_PER_PENTAGON, POINT_COLOR);
 }
+
+#if HIGHLIGHT_PENTAGONS_ON_START
+
+static void highlightPentagonsInOrder() {
+    for (int i = 0; i < PENTAGON_COUNT; i++) {
+#if DEBUG
+        Serial.printf("Pentagon %d (sketchup model #%d)\r\n", i, i+1);
+        printPentagon(&g_ballPentagons[i]);
+        Serial.println("------");
+        Serial.flush();
+#endif
+        fill_solid(g_LEDs, g_patterns.getLEDCount(), CRGB::Black);
+
+        for (int i = 0; i < 3; i++) {
+            fill_solid(g_ballPentagons[i].groupStartLEDs, NUMBER_LEDS_PER_PENTAGON, CRGB::Red);
+            FastLED.show();
+            delay(150);
+            fill_solid(g_ballPentagons[i].groupStartLEDs, NUMBER_LEDS_PER_PENTAGON, CRGB::Black);
+            FastLED.show();
+            delay(150);
+        }
+        
+        delay(1000);
+    }
+}
+#endif
+
 
 void initializeBall() {
     // Figure out the coordinate min/max points along the sphere for each pentagon. We'll highlight a pentagon if it is present in this area
@@ -257,7 +284,11 @@ void initializeBall() {
 
 //    delay(5000);
     
+#endif
     
+    
+#if HIGHLIGHT_PENTAGONS_ON_START
+    highlightPentagonsInOrder();
 #endif
 }
 
