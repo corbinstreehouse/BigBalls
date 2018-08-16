@@ -26,7 +26,7 @@
 #define POINT_COLOR CRGB::Green // The color we use when pointing on a pentagon
 
 // If this is 1, we will do a test on the start and highlight each pentagon in order so you can verify it
-#define HIGHLIGHT_PENTAGONS_ON_START 1
+#define HIGHLIGHT_PENTAGONS_ON_START 0
 
 // min and max are a value between 0 to less than 360. It includes 0 and excludes 360.
 typedef struct {
@@ -118,7 +118,7 @@ static void highlightPentagonsInOrder() {
 #endif
         fill_solid(g_LEDs, g_patterns.getLEDCount(), CRGB::Black);
 
-        for (int i = 0; i < 3; i++) {
+        for (int walk = 0; walk < 3; walk++) {
             fill_solid(g_ballPentagons[i].groupStartLEDs, NUMBER_LEDS_PER_PENTAGON, CRGB::Red);
             FastLED.show();
             delay(150);
