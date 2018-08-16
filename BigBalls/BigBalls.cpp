@@ -347,6 +347,8 @@ void setup() {
     FastLED.setBrightness( BRIGHTNESS);
     //    FastLED.setMaxPowerInVoltsAndMilliamps(5.0, 18000);
     
+    g_patterns.flashThreeTimes(CRGB::Green);
+    
     initializeBall();
     intializeBNO();
     initializeGPS();
