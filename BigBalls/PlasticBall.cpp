@@ -333,7 +333,8 @@ void doDirectionalPointWithOrientation(float targetDirectionInDegrees) {
     northVector = reverseRotationQuat.rotateVector(northVector);
     // Now, we rotate that vector to point towards the tower, first by generating a quaterion for that rotation
     imu::Quaternion rotationToTowerQuat;
-    rotationToTowerQuat.fromAxisAngle(zAxisVector, radians(targetDirectionInDegrees));
+    // negative, to rotate clockwise
+    rotationToTowerQuat.fromAxisAngle(zAxisVector, -radians(targetDirectionInDegrees));
     imu::Vector<3> targetVector = rotationToTowerQuat.rotateVector(northVector);
     
 #if DEBUG
