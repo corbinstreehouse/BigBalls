@@ -337,7 +337,7 @@ void doDirectionalPointWithOrientation(float targetDirectionInDegrees) {
     imu::Vector<3> targetVector = rotationToTowerQuat.rotateVector(northVector);
     
 #if DEBUG
-    Serial.printf("Target vector direction for %d degrees: ", targetDirectionInDegrees);
+    Serial.printf("Target vector direction for %f degrees: ", targetDirectionInDegrees);
     printVector(targetVector);
 #endif
     
