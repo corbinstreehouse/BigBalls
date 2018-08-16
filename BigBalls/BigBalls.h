@@ -21,7 +21,7 @@
 // Based on Dylan's breakpoint diagram
 #define GPS_RX_PIN 7
 #define GPS_TX_PIN 8
-#define GPS_SERIAL_BAUD 4800
+#define GPS_SERIAL_BAUD 9600
 
 #define BRIGHTNESS  64
 #define LED_TYPE    WS2812
