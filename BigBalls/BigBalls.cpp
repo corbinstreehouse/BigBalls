@@ -44,6 +44,8 @@ TinyGPSPlus g_gps;
 SoftwareSerial g_gpsSoftwareSerial(GPS_RX_PIN, GPS_TX_PIN);
 
 static uint32_t g_lastTimeInMS = 0; // in milliseconds
+static bool g_isDaytime = true;
+
 
 typedef CD_ENUM(int16_t, CDBallState)  {
     CDBallStateWaiting,
@@ -266,7 +268,7 @@ static void saveBNOCalibration() {
     EEPROM.put(BNO_CALIBRATION_EEPROM_ADDRESS, newCalib);
 }
 
-static void intializeBNO() {
+static void initializeBNO() {
     if (g_bno.begin()) {
         bool isCalibrated = loadBNOCalibration();
         
@@ -328,6 +330,21 @@ static void initializeGPS() {
 #endif
 }
 
+static inline void setupOffPins() {
+    pinMode(PIN_OFF0, OUTPUT);
+    digitalWrite(PIN_OFF0, LOW); // Going high kills power
+    
+    pinMode(PIN_OFF1, OUTPUT);
+    digitalWrite(PIN_OFF1, LOW); // Going high kills power
+    
+    pinMode(PIN_OFF2, OUTPUT);
+    digitalWrite(PIN_OFF2, LOW); // Going high kills power
+}
+
+static inline void setupPhotoTransistorPin() {
+    pinMode(PHOTO_TRANISTOR_PIN, INPUT_PULLUP);
+}
+
 void setup() {
 #if DEBUG
     Serial.begin(19200);
@@ -344,13 +361,15 @@ void setup() {
     g_LEDsPastEnd = &g_LEDs[NUM_LEDS];
     
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(g_LEDs, NUM_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setBrightness( BRIGHTNESS);
+    FastLED.setBrightness(g_isDaytime ? BRIGHTNESS_AT_DAYTIME : BRIGHTNESS_AT_NIGHT);
     //    FastLED.setMaxPowerInVoltsAndMilliamps(5.0, 18000);
-    
     g_patterns.flashThreeTimes(CRGB::Green);
     
+    setupOffPins();
+    setupPhotoTransistorPin();
+    
     initializeBall();
-    intializeBNO();
+    initializeBNO();
     initializeGPS();
     
     gotoWaitingState();
@@ -519,8 +538,42 @@ static void updateGPSPosition() {
 #endif
 }
 
+void updateDaytimeStatus() {
+    static int g_darkCounter = 0;
+    if (digitalRead(PHOTO_TRANISTOR_PIN)) { // 0 for light, 1 for dark
+        g_darkCounter++;
+    } else {
+        g_darkCounter--;
+    }
+    
+    if (g_darkCounter >= 6) {   // 6 * 10s = 1 min to change over
+        g_darkCounter--;          // go down so dark doesn't roll over
+        g_isDaytime = false;
+    }
+    else if (g_darkCounter <= -6) { // 6 * 10s = 1 min to change over
+        g_darkCounter++;             // go up so dark doesnt' roll under
+        g_isDaytime = true;
+    }
+}
+
+
+
 void loop() {    
     updateGPSPosition();
+    
+    EVERY_N_SECONDS(10) {
+        updateDaytimeStatus();
+        if (g_isDaytime) {
+            // Maye change brightness?
+            FastLED.setBrightness(BRIGHTNESS_AT_DAYTIME);
+        } else {
+            FastLED.setBrightness(BRIGHTNESS_AT_NIGHT);
+        }
+    }
+    
+//    EVERY_N_MILLISECONDS(100) {
+//        batt = analogRead(VS_PIN);
+//    }
     
     switch (g_ballState) {
         case CDBallStateWaiting: {
