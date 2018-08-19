@@ -25,16 +25,11 @@
 
 #define PHOTO_TRANISTOR_PIN 15   // photo transitor PT204-6B. With pullup, read low when bright light present (daylight).
 
-// OFF pins.
-// TODO: change these!
-#define PIN_OFF0 16  // wired to U2 pin 6 on PCB  -- main power for Teensy and first LED bank -- OFF high will shut off Teensy
-#define PIN_OFF1 21 // wired to RC0 middle pin    -- isolated 5V for second LED bank -- shared ground only
-#define PIN_OFF2 14 // wired to RC1 middle pin    -- isolated 5V for third LED bank -- shared ground only
-
 // Battery voltage pins and values
 // TODO: CHANGE THESE! Both the on and off pin can't be the same (14)
 static const int VOLTAGE_READ_PINS[3] = { 14, 14, 14 };
-static const int VOLTAGE_SHUTOFF_PINS[3] = { PIN_OFF0, PIN_OFF1, PIN_OFF2 };
+static const int VOLTAGE_SHUTOFF_PINS[3] = { 16, 21, 14 };
+
 #define MIN_BATTERY_VOLTAGE  6.3 // VOLTS, for 2-cell lipo
 
 #define REF_VOLTAGE 3.3 // TODO: this could be measured

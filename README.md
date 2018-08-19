@@ -1,5 +1,36 @@
 # BigBalls
 
+##
+
+**Voltage checking**
+
+Update the following code to the pins that will be hooked up to SENSE the battery voltage (not directly to the input voltage, that will fry things):
+
+`static const int VOLTAGE_READ_PINS[3] = { 14, 14, 14 };`
+
+When a voltage is low, it will shut that battery off with these pins hooked up to the switch:
+
+`static const int VOLTAGE_SHUTOFF_PINS[3] = { 16, 21, 14 };`
+
+These **have** to be changed; I don't know what they should be based on the hardware. The first one is assumed to be the teeny's voltage supply; before shutting the teensy off, it will shut off the other batteries.
+
+other values that need changing:
+
+`#define MIN_BATTERY_VOLTAGE  6.3 // VOLTS, for 2-cell lipo`
+
+Set the above value to whatever voltage your min voltage should be (probably higher for more cells).
+
+The following values can also be changed based on analyzed values for resistors:
+
+```#define REF_VOLTAGE 3.3 // TODO: this could be measured
+#define RESISTOR_Z1_VALUE 100.0 // kOhm
+#define RESISTOR_Z2_VALUE 15.0 // kOhm   (with 10uF filter cap in parallel)
+```
+
+
+
+
+
 ## GUI use of git
 
 Download a git client to make it easy to share source code changes. Try this:
@@ -13,6 +44,9 @@ Click “Clone a Repository” and find "corbinstreehouse/BigBalls"
 Give it a Local Path on your hard drive and clone it.
 
 Then open the BigBalls folder up in GitHub’s desktop client.
+
+
+
 
 
 ## Terminal use of git
