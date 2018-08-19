@@ -30,7 +30,7 @@
 static const int VOLTAGE_READ_PINS[3] = { 14, 14, 14 };
 static const int VOLTAGE_SHUTOFF_PINS[3] = { 16, 21, 14 };
 
-#define MIN_BATTERY_VOLTAGE  6.3 // VOLTS, for 2-cell lipo
+#define MIN_BATTERY_VOLTAGE  3.5 // VOLTS, for 2-cell lipo
 
 #define REF_VOLTAGE 3.3 // TODO: this could be measured
 #define RESISTOR_Z1_VALUE 100.0 // kOhm
