@@ -13,7 +13,7 @@
 #include "SoftwareSerial.h"
 
 ///////////////// PARAMETERS YOU CAN TWEAK
-#define WAIT_FADE_DURATION (5*1000) // Duration the fade takes when in the wiating state, in ms (5 seconds)
+#define WAIT_FADE_DURATION (5*1000) // Duration the fade takes when in the wiating state, in ms (5 seconds). If we need to use less power, increase the wait duration here.
 #define WAIT_TIME_BEFORE_COLOR_CHANGE (WAIT_FADE_DURATION*2) // Go to the next rainbow color after this amount of time in MS. IE: every 3 seconds the hue changes. This should be much bigger than the last value..
 
 // How long to do the initial color flash when initially moved
