@@ -46,7 +46,6 @@ SoftwareSerial g_gpsSoftwareSerial(GPS_RX_PIN, GPS_TX_PIN);
 static uint32_t g_lastTimeInMS = 0; // in milliseconds
 static bool g_isDaytime = true;
 
-
 typedef CD_ENUM(int16_t, CDBallState)  {
     CDBallStateWaiting,
     CDBallStateInitialMovePattern,
@@ -57,11 +56,6 @@ typedef CD_ENUM(int16_t, CDBallState)  {
 static CDBallState g_ballState = CDBallStateWaiting;
 
 static void gotoWaitingState();
-
-
-#if DEBUG
-static uint32_t g_movedTestTime = 0;
-#endif
 
 static imu::Vector<3> g_lastAccelValue;
 
@@ -139,7 +133,7 @@ void displaySensorOffsets(const adafruit_bno055_offsets_t &calibData)
     Serial.print(calibData.mag_radius);
 }
 
-void displayCalStatus(void)
+void displayCalibrationStatus(void)
 {
     /* Get the four calibration values (0..3) */
     /* Any sensor data reporting 0 should be ignored, */
@@ -245,7 +239,7 @@ static void calibrateBNO() {
         Serial.print("\tZ: ");
         Serial.print(event.orientation.z, 4);
         Serial.println();
-        displayCalStatus();
+        displayCalibrationStatus();
 #endif
         /* Wait the specified delay before requesting new data */
         delay(BNO055_SAMPLERATE_DELAY_MS);
@@ -331,14 +325,10 @@ static void initializeGPS() {
 }
 
 static inline void setupOffPins() {
-    pinMode(PIN_OFF0, OUTPUT);
-    digitalWrite(PIN_OFF0, LOW); // Going high kills power
-    
-    pinMode(PIN_OFF1, OUTPUT);
-    digitalWrite(PIN_OFF1, LOW); // Going high kills power
-    
-    pinMode(PIN_OFF2, OUTPUT);
-    digitalWrite(PIN_OFF2, LOW); // Going high kills power
+    for (int i = 0; i < 3; i++) {
+        pinMode(VOLTAGE_SHUTOFF_PINS[i], OUTPUT);
+        digitalWrite(VOLTAGE_SHUTOFF_PINS[i], LOW); // Going high kills power
+    }
 }
 
 static inline void setupPhotoTransistorPin() {
@@ -424,8 +414,8 @@ static void updateDirectionalPoint() {
     TinyGPSLocation location = g_gps.location;
     if (location.isValid()) {
         // Figure out the target direction to the tower, based on our current GPS location and the tower's lat/long
-        double targetDirectionInDegrees = TinyGPSPlus::courseTo(g_gps.location.lat(),
-                                                g_gps.location.lng(),
+        double targetDirectionInDegrees = TinyGPSPlus::courseTo(location.lat(),
+                                                location.lng(),
                                                 g_towerLat,
                                                 g_towerLong);
         doDirectionalPointWithOrientation(targetDirectionInDegrees);
@@ -588,22 +578,34 @@ static void shutoffBatteryAtPin(int pin) {
     delay(100);
 }
 
+static float g_batteryVoltages[3] = { 0, 0, 0};
+
 static void checkBatteryVoltage() {
     for (int i = 0; i < 3; i++) {
-        float voltage = readBatteryVoltageOnPin(VOLTAGE_READ_PINS[i]);
-        if (voltage < 1) {
+        g_batteryVoltages[i] = readBatteryVoltageOnPin(VOLTAGE_READ_PINS[i]);
+        if (g_batteryVoltages[i] < 1) {
             // ASSUME NOT HOOKED UP!
             
         } else {
-            if (voltage <= MIN_BATTERY_VOLTAGE) {
-                // We need to shut off this battery
-                if (VOLTAGE_SHUTOFF_PINS[i] == PIN_OFF0) {
+            if (g_batteryVoltages[i] <= MIN_BATTERY_VOLTAGE) {
+                // We need to shut off this battery after we do the others...
+                if (VOLTAGE_SHUTOFF_PINS[i] == VOLTAGE_SHUTOFF_PINS[0]) {
                     // If we are shutting down the teensy, first shutoff the other batteries
                     shutoffBatteryAtPin(VOLTAGE_SHUTOFF_PINS[1]);
                     shutoffBatteryAtPin(VOLTAGE_SHUTOFF_PINS[2]);
                 }
                 shutoffBatteryAtPin(VOLTAGE_SHUTOFF_PINS[i]);
             }
+        }
+    }
+}
+
+static void sendGPSDataToTower() {
+    TinyGPSLocation location = g_gps.location;
+    if (location.isValid()) {
+        Serial1.printf("Plastic Location: %f %f\r\n", location.lat(), location.lng());
+        for (int i = 0; i < 3; i++) {
+            Serial1.printf("Plastic V%d: %f\r\n", i, g_batteryVoltages[i]);
         }
     }
 }
@@ -617,6 +619,11 @@ void loop() {
     
     EVERY_N_MILLISECONDS(100) {
         checkBatteryVoltage();
+    }
+
+    // Every minute update our GPS position to the tower
+    EVERY_N_MINUTES(1) {
+        sendGPSDataToTower();
     }
     
     switch (g_ballState) {

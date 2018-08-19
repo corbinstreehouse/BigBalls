@@ -2,6 +2,18 @@
 
 ##
 
+
+**GPS Tower Reporting**
+
+``sendGPSDataToTower()`` will send the GPS position and battery voltages to the tower every X seconds. Comment it out or update as needed:
+
+```
+Serial1.printf("Plastic Location: %f %f\r\n", location.lat(), location.lng());
+for (int i = 0; i < 3; i++) {
+  Serial1.printf("Plastic V%d: %f\r\n", i, g_batteryVoltages[i]);
+}
+```
+
 **Voltage checking**
 
 Update the following code to the pins that will be hooked up to SENSE the battery voltage (not directly to the input voltage, that will fry things):
