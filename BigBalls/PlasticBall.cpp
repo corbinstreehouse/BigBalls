@@ -28,6 +28,9 @@
 // If this is 1, we will do a test on the start and highlight each pentagon in order so you can verify it
 #define HIGHLIGHT_PENTAGONS_ON_START 0
 
+// Orienient the ball with the 1-4 set pointing directly north and the up set pointing directly up. Then set this to one to have it print the current reversed quaterion to account for the offset chip location
+#define PRINT_OFFSET_QUAT 1
+
 // min and max are a value between 0 to less than 360. It includes 0 and excludes 360.
 typedef struct {
     imu::Vector<3> centerVector;
@@ -294,42 +297,31 @@ void initializeBall() {
 
 // Called from BigBalls.cpp
 void doDirectionalPointWithOrientation(float targetDirectionInDegrees) {
-    targetDirectionInDegrees = 0; //Test direction is north. Comment out when we want to point it at tower.
+    targetDirectionInDegrees = 0;
     imu::Quaternion orientationQuat = g_bno.getQuat();
-#if  0 // DEBUG
-    imu::Vector<3> euler = g_bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-
-    Serial.printf("TEST doDirectionalPointWithOrientation(%f)\r\n", targetDirectionInDegrees);
+    imu::Quaternion reverseRotationQuat = orientationQuat.conjugate();
     
-    printQuat(orientationQuat);
-    
-    Serial.printf("degrees %f -> ", targetDirectionInDegrees);
-    Serial.println(TinyGPSPlus::cardinal(targetDirectionInDegrees));
-    
-    
-    /* Also send calibration data for each sensor. */
-    uint8_t sys, gyro, accel, mag = 0;
-    g_bno.getCalibration(&sys, &gyro, &accel, &mag);
-    Serial.print(F("Calibration: "));
-    Serial.print(sys, DEC);
-    Serial.print(F(" "));
-    Serial.print(gyro, DEC);
-    Serial.print(F(" "));
-    Serial.print(accel, DEC);
-    Serial.print(F(" "));
-    Serial.println(mag, DEC);
+    // This value should be set to what we print
+    imu::Quaternion offsetQuat = imu::Quaternion(1.0, 0.0, 0.0, 0.0);
+//    imu::Quaternion offsetQuat = imu::Quaternion(0.162842, -0.331543, -0.621033, -0.691284);
+#if PRINT_OFFSET_QUAT || DEBUG
+    Serial.printf("imu::Quaternion offsetQuat = imu::Quaternion(%f, %f, %f, %f);\r\n", (float)reverseRotationQuat.w(), (float)reverseRotationQuat.x(), (float)reverseRotationQuat.y(), (float)reverseRotationQuat.z());
     
 #endif
+
     // Fill all black first
     fill_solid(g_LEDs, NUM_LEDS, CRGB::Black);
 
     // Take the z axis and unrotate it by the amount that the BNO has been rotated. This will get it pointing up.
     imu::Vector<3> zAxisVector = imu::Vector<3>(0, 0, 1);
-    imu::Quaternion reverseRotationQuat = orientationQuat.conjugate();
+    zAxisVector = offsetQuat.rotateVector(zAxisVector);
+
     zAxisVector = reverseRotationQuat.rotateVector(zAxisVector);
     // This should always point up on the ball, regardless of its orientation. We use that as our new z-axis, and rotate a vector from north pointed to the way we want to go
     // Start with a vector pointing north (y=1)
     imu::Vector<3> northVector = imu::Vector<3>(0, 1, 0);
+    northVector = offsetQuat.rotateVector(northVector);
+    
     // reverse it so we have a vector pointing towards north on the ball
     northVector = reverseRotationQuat.rotateVector(northVector);
     // Now, we rotate that vector to point towards the tower, first by generating a quaterion for that rotation

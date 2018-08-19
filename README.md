@@ -2,6 +2,22 @@
 
 ##
 
+**Accounting For BNO Offset/Orientation**
+
+1. Point the ball with north (the intersection of pentagons 1-4) directly on north (use your phone), and the "up" pentagon set pointing directly up (pentagons 17-20). See "2018-08-13 ball faces renumbered.skp".
+2. Run the code with DEBUG=1 or PRINT_OFFSET_QUAT=1
+3. Copy the resulting offset quaternion that is output to the Serial, such as: ``imu::Quaternion offsetQuat = imu::Quaternion(0.210022, -0.222900, -0.668518, -0.677734);``
+4. Open PlasticBall.cpp, find doDirectionalPointWithOrientation() at the bottom, and replace this line (the unit quaternion) with the one output above for your offset:
+``    imu::Quaternion offsetQuat = imu::Quaternion(1.0, 0.0, 0.0, 0.0);``
+
+**LED Test**
+
+Set this to have it highlight the pentagons in order on start (in PlasticBall.cpp):
+
+```// If this is 1, we will do a test on the start and highlight each pentagon in order so you can verify it
+#define HIGHLIGHT_PENTAGONS_ON_START 0
+```
+
 
 **GPS Tower Reporting**
 
