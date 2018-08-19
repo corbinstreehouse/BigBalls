@@ -294,6 +294,7 @@ void initializeBall() {
 
 // Called from BigBalls.cpp
 void doDirectionalPointWithOrientation(float targetDirectionInDegrees) {
+    targetDirectionInDegrees = 0; //Test direction is north. Comment out when we want to point it at tower.
     imu::Quaternion orientationQuat = g_bno.getQuat();
 #if  0 // DEBUG
     imu::Vector<3> euler = g_bno.getVector(Adafruit_BNO055::VECTOR_EULER);
