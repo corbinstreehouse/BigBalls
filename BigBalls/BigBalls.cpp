@@ -554,26 +554,66 @@ void updateDaytimeStatus() {
         g_darkCounter++;             // go up so dark doesnt' roll under
         g_isDaytime = true;
     }
+    if (g_isDaytime) {
+        // Maye change brightness?
+        FastLED.setBrightness(BRIGHTNESS_AT_DAYTIME);
+    } else {
+        FastLED.setBrightness(BRIGHTNESS_AT_NIGHT);
+    }
 }
 
+static float readBatteryVoltageOnPin(int pin) {
+    float readValue = analogRead(pin); // returns 0 - [max resolution]; 0 is 0v, and 65535 is ~9.?v
+    
+    // It is a percentage of the resolution; I have it set to:analogReadRes(16) , or 16-bits...plus 0 (the addition of 1)
+    float readValuePercetnage = readValue / (UINT16_MAX + 1);
+    float readValueInVoltage = readValuePercetnage * REF_VOLTAGE; // Over REF_VOLTAGE max volts input
+    float voltage = readValueInVoltage * (RESISTOR_Z1_VALUE + RESISTOR_Z2_VALUE)/RESISTOR_Z2_VALUE;
+    
+#if DEBUG
+   // Serial.printf("voltage read pin %d: %.3f, readValuePercetnage: %.3f, readValueInVoltage: %.3f, voltage: %.3f\r\n", pin, readValue, readValuePercetnage, readValueInVoltage, voltage);
+#endif
+    
+    return voltage;
+}
 
+static void shutoffBatteryAtPin(int pin) {
+    digitalWrite(pin, HIGH); // kill power
+    delay(100);
+    digitalWrite(pin, LOW); // reset for next kill
+    delay(100);
+}
+
+static void checkBatteryVoltage() {
+    for (int i = 0; i < 3; i++) {
+        float voltage = readBatteryVoltageOnPin(VOLTAGE_READ_PINS[i]);
+        if (voltage < 1) {
+            // ASSUME NOT HOOKED UP!
+            
+        } else {
+            if (voltage <= MIN_BATTERY_VOLTAGE) {
+                // We need to shut off this battery
+                if (VOLTAGE_SHUTOFF_PINS[i] == PIN_OFF0) {
+                    // If we are shutting down the teensy, first shutoff the other batteries
+                    shutoffBatteryAtPin(VOLTAGE_SHUTOFF_PINS[1]);
+                    shutoffBatteryAtPin(VOLTAGE_SHUTOFF_PINS[2]);
+                }
+                shutoffBatteryAtPin(VOLTAGE_SHUTOFF_PINS[i]);
+            }
+        }
+    }
+}
 
 void loop() {    
     updateGPSPosition();
     
     EVERY_N_SECONDS(10) {
         updateDaytimeStatus();
-        if (g_isDaytime) {
-            // Maye change brightness?
-            FastLED.setBrightness(BRIGHTNESS_AT_DAYTIME);
-        } else {
-            FastLED.setBrightness(BRIGHTNESS_AT_NIGHT);
-        }
     }
     
-//    EVERY_N_MILLISECONDS(100) {
-//        batt = analogRead(VS_PIN);
-//    }
+    EVERY_N_MILLISECONDS(100) {
+        checkBatteryVoltage();
+    }
     
     switch (g_ballState) {
         case CDBallStateWaiting: {
