@@ -26,9 +26,8 @@
 #define PHOTO_TRANISTOR_PIN 15   // photo transitor PT204-6B. With pullup, read low when bright light present (daylight).
 
 // Battery voltage pins and values
-// TODO: CHANGE THESE! Both the on and off pin can't be the same (14)
-static const int VOLTAGE_READ_PINS[3] = { 14, 14, 14 };
-static const int VOLTAGE_SHUTOFF_PINS[3] = { 16, 21, 14 };
+static const int VOLTAGE_READ_PINS[3] = { 16 /* battery 0*/, 17 /* battery 1*/, 21 /* battery 2*/ };
+static const int VOLTAGE_SHUTOFF_PINS[3] = { 4, 20, 14 /* TODO Update */ };
 
 #define MIN_BATTERY_VOLTAGE  6.3 // VOLTS, for 2-cell lipo
 
