@@ -331,6 +331,13 @@ static inline void setupOffPins() {
     }
 }
 
+static inline void setupBatteryVoltageReadPins() {
+	// probably not necessary but added to make sure
+    for (int i = 0; i < 3; i++) {
+        pinMode(VOLTAGE_READ_PINS[i], INPUT);
+    }
+}
+
 static inline void setupPhotoTransistorPin() {
     pinMode(PHOTO_TRANISTOR_PIN, INPUT_PULLUP);
 }
@@ -360,6 +367,7 @@ void setup() {
     g_patterns.flashThreeTimes(CRGB::Green);
     
     setupOffPins();
+    setupBatteryVoltageReadPins();
     setupPhotoTransistorPin();
     
     initializeBall();
@@ -565,13 +573,15 @@ static float readBatteryVoltageOnPin(int pin) {
     float voltage = readValueInVoltage * (RESISTOR_Z1_VALUE + RESISTOR_Z2_VALUE)/RESISTOR_Z2_VALUE;
     
 #if DEBUG
-   // Serial.printf("voltage read pin %d: %.3f, readValuePercetnage: %.3f, readValueInVoltage: %.3f, voltage: %.3f\r\n", pin, readValue, readValuePercetnage, readValueInVoltage, voltage);
+   // Serial.printf("voltage read pin %d: %.3f, readValuePercentage: %.3f, readValueInVoltage: %.3f, voltage: %.3f\r\n", pin, readValue, readValuePercetnage, readValueInVoltage, voltage);
 #endif
     
     return voltage;
 }
 
 static void shutoffBatteryAtPin(int pin) {
+	Serial.print("Shutting off battery ");
+	Serial.println(pin);
     digitalWrite(pin, HIGH); // kill power
     delay(100);
     digitalWrite(pin, LOW); // reset for next kill
@@ -604,8 +614,10 @@ static void sendGPSDataToTower() {
     TinyGPSLocation location = g_gps.location;
     if (location.isValid()) {
         Serial1.printf("Plastic Location: %f %f\r\n", location.lat(), location.lng());
+        Serial.printf("Plastic Location: %f %f\r\n", location.lat(), location.lng());
         for (int i = 0; i < 3; i++) {
-            Serial1.printf("Plastic V%d: %f\r\n", i, g_batteryVoltages[i]);
+            Serial1.printf("Plastic V%d: %f\r\n", i-1, g_batteryVoltages[i]);
+            Serial.printf("Plastic V%d: %f\r\n", i-1, g_batteryVoltages[i]);
         }
     }
 }

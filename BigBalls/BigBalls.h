@@ -16,7 +16,7 @@
 #define NUMBER_LEDS_PER_GROUP (8+6+8+6) // The pattern Mayra told me
 #define NUM_LEDS (NUMBER_LEDS_PER_GROUP*NUMBER_GROUPS)
 
-#define LED_PIN 15 // corbin, using 11 for testing
+#define LED_PIN 2 // corbin, using 11 for testing
 
 // Based on Dylan's breakpoint diagram
 #define GPS_RX_PIN 7
@@ -26,7 +26,7 @@
 #define PHOTO_TRANISTOR_PIN 15   // photo transitor PT204-6B. With pullup, read low when bright light present (daylight).
 
 // Battery voltage pins and values
-static const int VOLTAGE_READ_PINS[3] = { 16 /* battery 0*/, 17 /* battery 1*/, 21 /* battery 2*/ };
+static const int VOLTAGE_READ_PINS[3] = { 16 /* battery 0*/, 20 /* battery 1*/, 21 /* battery 2*/ };
 static const int VOLTAGE_SHUTOFF_PINS[3] = { 4, 20, 14 /* TODO Update */ };
 
 #define MIN_BATTERY_VOLTAGE  (5*3.3) // VOLTS, for 2-cell lipo

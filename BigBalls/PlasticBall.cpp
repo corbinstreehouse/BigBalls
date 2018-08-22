@@ -26,7 +26,7 @@
 #define POINT_COLOR CRGB::Green // The color we use when pointing on a pentagon
 
 // If this is 1, we will do a test on the start and highlight each pentagon in order so you can verify it
-#define HIGHLIGHT_PENTAGONS_ON_START 0
+#define HIGHLIGHT_PENTAGONS_ON_START 1
 
 // Orienient the ball with the 1-4 set pointing directly north and the up set pointing directly up. Then set this to one to have it print the current reversed quaterion to account for the offset chip location
 #define PRINT_OFFSET_QUAT 1
