@@ -432,6 +432,15 @@ static void updateDirectionalPoint() {
                                                 location.lng(),
                                                 g_towerLat,
                                                 g_towerLong);
+        
+        // If we are within X distance (in meters), point 180 degrees away from the tower instead of towards it
+        double distanceInMeters = TinyGPSPlus::distanceBetween(location.lat(),
+                                                         location.lng(),
+                                                         g_towerLat,
+                                                         g_towerLong);
+        if (distanceInMeters <= DISTANCE_TO_POINT_AWAY_FROM_TOWER_IN_METERS) {
+            targetDirectionInDegrees += 180;
+        }
         doDirectionalPointWithOrientation(targetDirectionInDegrees);
     }
 }
