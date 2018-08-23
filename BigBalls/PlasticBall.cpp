@@ -28,6 +28,8 @@
 // If this is 1, we will do a test on the start and highlight each pentagon in order so you can verify it
 #define HIGHLIGHT_PENTAGONS_ON_START 1
 
+#define DISTANCE_TO_HIGHLIGHT 1.0 // IF LESS THAN THIS value in distance, we will highilght that pentagon. I see values from near 0 (right touching) to ~14 (other side of the ball)
+
 // Orienient the ball with the 1-4 set pointing directly north and the up set pointing directly up. Then set this to one to have it print the current reversed quaterion to account for the offset chip location
 #define PRINT_OFFSET_QUAT 1
 
@@ -72,7 +74,14 @@ static float distanceFromTwoPoints(imu::Vector<3> v1, imu::Vector<3> v2) {
     return sq(x2 + y2 + z2);
 }
 
-static BallPentagon *findPentagonForVector(imu::Vector<3> c) {
+
+static void highlightPentagon(BallPentagon *pentagon) {
+    // Green direction pointing color??
+    fill_solid(pentagon->groupStartLEDs, NUMBER_LEDS_PER_PENTAGON, POINT_COLOR);
+}
+
+static void highlightPentagonsNearVector(imu::Vector<3> c) {
+
     BallPentagon *bestResult = NULL;
     float bestDistance = HUGE_VALF; // large number
     
@@ -83,6 +92,13 @@ static BallPentagon *findPentagonForVector(imu::Vector<3> c) {
         if (distance < bestDistance) {
             bestDistance = distance;
             bestResult = pentagon;
+        }
+        if (distance < DISTANCE_TO_HIGHLIGHT) {
+            highlightPentagon(pentagon);
+#if DEBUG
+            Serial.printf("      Highlight pentagon model: %d\r\n", i+1);
+            //        Serial.printf("Pent %d, dist: %f\r\n", i, distance);
+#endif
         }
     }
     if (bestResult == NULL) {
@@ -101,12 +117,6 @@ static BallPentagon *findPentagonForVector(imu::Vector<3> c) {
 
 #endif
     }
-    return bestResult;
-}
-
-static void hilightPentagon(BallPentagon *pentagon) {
-    // Green direction pointing color??
-    fill_solid(pentagon->groupStartLEDs, NUMBER_LEDS_PER_PENTAGON, POINT_COLOR);
 }
 
 #if HIGHLIGHT_PENTAGONS_ON_START
@@ -309,9 +319,6 @@ void doDirectionalPointWithOrientation(float targetDirectionInDegrees) {
     
 #endif
 
-    // Fill all black first
-    fill_solid(g_LEDs, NUM_LEDS, CRGB::Black);
-
     // Take the z axis and unrotate it by the amount that the BNO has been rotated. This will get it pointing up.
     imu::Vector<3> zAxisVector = imu::Vector<3>(0, 0, 1);
     zAxisVector = offsetQuat.rotateVector(zAxisVector);
@@ -335,9 +342,9 @@ void doDirectionalPointWithOrientation(float targetDirectionInDegrees) {
     printVector(targetVector);
 #endif
     
-    BallPentagon *pentagon = findPentagonForVector(targetVector);
-    if (pentagon == NULL) return; // Avoid crashing in case something is wrong with the code
-    hilightPentagon(pentagon);
+    // Fill all black first
+    fill_solid(g_LEDs, NUM_LEDS, CRGB::Black);
+    highlightPentagonsNearVector(targetVector);
     
     // We have to show, as we aren't using the patterns library and just using FastLED
     FastLED.show();
