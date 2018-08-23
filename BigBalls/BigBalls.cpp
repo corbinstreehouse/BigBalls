@@ -300,6 +300,7 @@ int checksum(const char *s) {
 
 static void initializeGPS() {
     g_gpsSoftwareSerial.begin(GPS_SERIAL_BAUD);
+
 #if TEST_GPS
     // Don't even bother reading this.
     // GPS test coordinates: 37.1221962,-122.0067858
@@ -373,6 +374,8 @@ void setup() {
     initializeBall();
     initializeBNO();
     initializeGPS();
+    
+    Serial1.begin(57600);   // SiK Radio to tower/camp
     
     gotoWaitingState();
 }
@@ -613,12 +616,14 @@ static void checkBatteryVoltage() {
 static void sendGPSDataToTower() {
     TinyGPSLocation location = g_gps.location;
     if (location.isValid()) {
-        Serial1.printf("Plastic Location: %f %f\r\n", location.lat(), location.lng());
-        Serial.printf("Plastic Location: %f %f\r\n", location.lat(), location.lng());
-        for (int i = 0; i < 3; i++) {
-            Serial1.printf("Plastic V%d: %f\r\n", i-1, g_batteryVoltages[i]);
-            Serial.printf("Plastic V%d: %f\r\n", i-1, g_batteryVoltages[i]);
-        }
+        Serial1.printf("PL:%f %f\r\n", location.lat(), location.lng());
+        Serial.printf("PL:%f %f\r\n", location.lat(), location.lng());
+    } else {
+        Serial1.println(F("PL: No GPS"));
+    }
+    for (int i = 0; i < 3; i++) {
+        Serial1.printf("PB%d:%f\r\n", i-1, g_batteryVoltages[i]);
+        Serial.printf("PB%d:%f\r\n", i-1, g_batteryVoltages[i]);
     }
 }
 
