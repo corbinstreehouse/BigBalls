@@ -343,6 +343,8 @@ static inline void setupPhotoTransistorPin() {
     pinMode(PHOTO_TRANISTOR_PIN, INPUT_PULLUP);
 }
 
+static void updateBrightness();
+
 void setup() {
     
     analogReadAveraging(16); // longer averaging of reads; drastically stabilizes my battery voltage read compared to the default of 4
@@ -363,7 +365,7 @@ void setup() {
     g_LEDsPastEnd = &g_LEDs[NUM_LEDS];
     
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(g_LEDs, NUM_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setBrightness(g_isDaytime ? BRIGHTNESS_AT_DAYTIME : BRIGHTNESS_AT_NIGHT);
+    updateBrightness();
     //    FastLED.setMaxPowerInVoltsAndMilliamps(5.0, 18000);
     g_patterns.flashThreeTimes(CRGB::Green);
     
@@ -410,6 +412,7 @@ static void gotoDirectionalPointState() {
 #endif
     
     g_ballState = CDBallStateDirectionalPoint;
+    updateBrightness();
     
     // Clear the LEDs and set our pattern to be "nothing" so we can manually update individual ones with FastLED
     g_patterns.setPatternType(LEDPatternTypeDoNothing);
@@ -437,6 +440,7 @@ void doBadDirection() {
     g_patterns.flashThreeTimes(CRGB::Red); // Flash red (synchronous call)
     g_lastTimeInMS = millis(); // Reset the time we were last moved to be now
     g_ballState = CDBallStateDirectionalPoint; // Go back to directional pointing for the time
+    updateBrightness();
 }
 
 static void gotoWaitingState() {
@@ -444,6 +448,7 @@ static void gotoWaitingState() {
     Serial.println("------- gotoWaitingState");
 #endif
     g_ballState = CDBallStateWaiting;
+    updateBrightness();
 
     // Do a low-level glow of various colors; start the timer and set the pattern to show
     g_lastTimeInMS = millis();
@@ -476,6 +481,7 @@ void gotoInitialMovedState() {
 
     // Do a pattern (not random) to indicate something is going to happen. Do it for 3 seconds, then flash
     g_ballState = CDBallStateInitialMovePattern;
+    updateBrightness();
 //    g_patterns.flashThreeTimes(CRGB::Green); /// this call is synchronous and will return when done
     // Then a random cool pattern for INITIAL_MOVE_DURATION time duration
     g_lastTimeInMS = millis();
@@ -486,7 +492,7 @@ void gotoInitialMovedState() {
 #if DEBUG
     Serial.printf("Going to pattern #: %d (count %d). Free ram: %d, free heap: %d, free stack %d\r\n", g_NextMovePatternToUse, LEDPatternTypeCount, ram.free(), ram.heap_free(), ram.stack_free());
 #endif
-    
+    updateBrightness();
     // Setup the next
     g_NextMovePatternToUse++;
     if (g_NextMovePatternToUse >= LEDPatternTypeCount) {
@@ -543,6 +549,22 @@ static void updateGPSPosition() {
 #endif
 }
 
+static void updateBrightness() {
+    if (g_isDaytime) {
+        if (g_ballState == CDBallStateWaiting) {
+            FastLED.setBrightness(BRIGHTNESS_WAITING_AT_DAYTIME);
+        } else {
+            FastLED.setBrightness(BRIGHTNESS_AT_DAYTIME);
+        }
+    } else {
+        if (g_ballState == CDBallStateWaiting) {
+            FastLED.setBrightness(BRIGHTNESS_WAITING_AT_NIGHT);
+        } else {
+            FastLED.setBrightness(BRIGHTNESS_AT_NIGHT);
+        }
+    }
+}
+
 void updateDaytimeStatus() {
     static int g_darkCounter = 0;
     if (digitalRead(PHOTO_TRANISTOR_PIN)) { // 0 for light, 1 for dark
@@ -559,12 +581,7 @@ void updateDaytimeStatus() {
         g_darkCounter++;             // go up so dark doesnt' roll under
         g_isDaytime = true;
     }
-    if (g_isDaytime) {
-        // Maye change brightness?
-        FastLED.setBrightness(BRIGHTNESS_AT_DAYTIME);
-    } else {
-        FastLED.setBrightness(BRIGHTNESS_AT_NIGHT);
-    }
+    updateBrightness();
 }
 
 static float readBatteryVoltageOnPin(int pin) {
