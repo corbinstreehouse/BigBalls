@@ -43,7 +43,10 @@ static const int VOLTAGE_SHUTOFF_PINS[3] = { 4, 20, 14 /* TODO Update */ };
 #define BRIGHTNESS_WAITING_AT_DAYTIME  32
 #define BRIGHTNESS_WAITING_AT_NIGHT  32
 
-#define DISTANCE_TO_POINT_AWAY_FROM_TOWER_IN_METERS 15
+// if it is within X meters, start pointing away
+#define DISTANCE_TO_FLIP_TO_POINTING_AWAY 10 // in meters
+// If it is pushed 300 meters (~1000 feet) away, switch and start pointing in.
+#define DISTANCE_TO_FLIP_TO_POINTING_TOWARDS_TOWER 300
 
 
 #define LED_TYPE    WS2812

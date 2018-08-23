@@ -420,6 +420,14 @@ static void gotoDirectionalPointState() {
     updateDirectionalPoint();
 }
 
+typedef CD_ENUM(int16_t, PointingDirection)  {
+    PointingDirectionAwayFromTower,
+    PointingDirectionTowardsTower,
+};
+
+// start out pointing away from the tower until moved far enough to start pointing back
+static PointingDirection g_pointingDirection = PointingDirectionAwayFromTower;
+
 static void updateDirectionalPoint() {
     // Get an update from the sensor
     sensors_event_t event;
@@ -438,7 +446,24 @@ static void updateDirectionalPoint() {
                                                          location.lng(),
                                                          g_towerLat,
                                                          g_towerLong);
-        if (distanceInMeters <= DISTANCE_TO_POINT_AWAY_FROM_TOWER_IN_METERS) {
+#if DEBUG
+        Serial.printf("-- Pointing %s, distance: %f\r\n", g_pointingDirection == PointingDirectionAwayFromTower ? "AWAY" : "TOWARDS", distanceInMeters);
+#endif
+        if (g_pointingDirection == PointingDirectionAwayFromTower) {
+            // if that's far enough...flip
+            if (distanceInMeters >= DISTANCE_TO_FLIP_TO_POINTING_TOWARDS_TOWER) {
+                g_pointingDirection = PointingDirectionTowardsTower;
+            }
+        } else {
+            // pointing towards the tower
+            // if that's close enough...flip
+            if (distanceInMeters <= DISTANCE_TO_FLIP_TO_POINTING_AWAY) {
+                g_pointingDirection = PointingDirectionAwayFromTower;
+            }
+        }
+    
+        // Flip  180 if we are pointing away; the direction was towards it
+        if (g_pointingDirection == PointingDirectionAwayFromTower) {
             targetDirectionInDegrees += 180;
         }
         doDirectionalPointWithOrientation(targetDirectionInDegrees);
